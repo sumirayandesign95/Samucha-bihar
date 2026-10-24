@@ -96,3 +96,29 @@ export function DistrictSelectorCard() {
     </section>
   );
 }
+
+/** Home page mobile-first district navigation.
+ * Closed by default so local-news controls never monopolize the first screen.
+ */
+export function MobileDistrictPicker() {
+  return (
+    <details className="group overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 focus-visible:outline-2 focus-visible:outline-primary [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 items-center gap-2.5 text-sm font-bold text-foreground">
+          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          अपने जिले की खबरें
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-primary">
+          जिला चुनें <ArrowRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" aria-hidden="true" />
+        </span>
+      </summary>
+      <div className="border-t border-border bg-muted/20 p-3.5">
+        <p className="mb-3 text-xs text-muted-foreground">जिला चुनें, फिर चाहें तो अपना शहर भी चुनें।</p>
+        <DistrictSelector />
+        <Link to="/districts" className="mt-3 inline-block text-xs font-bold text-primary underline underline-offset-4">
+          सभी 38 जिले देखें
+        </Link>
+      </div>
+    </details>
+  );
+}

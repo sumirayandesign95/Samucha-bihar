@@ -70,3 +70,10 @@ Branch: `development/premium-hindi-newsroom`.
 - Privileged admin client now fails closed without server-only SUPABASE_SERVICE_ROLE_KEY.
 - Added migration blueprint for RLS and role privileges, intentionally unapplied.
 - Added pre-release staging tests, backup, migration order, and rollback checklist.
+
+## Mobile first-screen correction (user screenshot feedback, 24 October 2026)
+- Homepage on screens under md now has a single compact "अपने जिले की खबरें / जिला चुनें" row; expands only when the reader taps it.
+- First main-news block appears immediately under the compact row instead of below a full-screen location form.
+- Removed the verbose tagline, secondary description and search shortcut from the narrow mobile first-screen only (search remains in the header menu).
+- Desktop retains its full district and city selector; district directory and admin functionality remain unchanged.
+- No live data, Supabase, or production deployment changes.
