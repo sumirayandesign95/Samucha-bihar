@@ -15,6 +15,7 @@ function ReviewQueue() {
   const qc = useQueryClient();
   const { data = [], isLoading } = useQuery({ queryKey: ["admin-review"], queryFn: () => listFn() });
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
   const [scheduleAt, setScheduleAt] = useState<Record<string, string>>({});
 
   const invalidate = () => {
@@ -24,11 +25,14 @@ function ReviewQueue() {
   };
 
   const approve = async (id: string) => {
-    setBusyId(id);
+    setBusyId(id); setActionError("");
     try {
       const at = scheduleAt[id];
+      if (at && new Date(at).getTime() <= Date.now()) { setActionError("शेड्यूल के लिए भविष्य का समय चुनें।"); return; }
       await approveFn({ data: { id, publishAt: at ? new Date(at).toISOString() : null } });
       invalidate();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "प्रकाशन विफल हुआ।");
     } finally {
       setBusyId(null);
     }
@@ -40,6 +44,8 @@ function ReviewQueue() {
     try {
       await rejectFn({ data: { id, note: note.trim() } });
       invalidate();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "समीक्षा अपडेट विफल हुआ।");
     } finally {
       setBusyId(null);
     }
@@ -50,6 +56,7 @@ function ReviewQueue() {
       <h1 className="font-display text-3xl font-bold">समीक्षा हेतु खबरें</h1>
       <p className="text-sm text-muted-foreground mt-1">संपादक द्वारा जाँच और स्वीकृति के लिए भेजी गई खबरें।</p>
 
+      {actionError && <p role="alert" className="mt-4 rounded-lg border border-destructive/30 p-3 text-sm text-destructive">{actionError}</p>}
       <div className="mt-6 space-y-3">
         {isLoading && <p className="text-sm text-muted-foreground">लोड हो रहा है...</p>}
         {!isLoading && data.length === 0 && (

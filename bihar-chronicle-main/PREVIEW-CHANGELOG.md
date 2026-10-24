@@ -59,3 +59,9 @@ Branch: `development/premium-hindi-newsroom`.
 ## Admin usability milestone
 - Localize newsroom dashboard, review queue, role labels and article status badges in Hindi.
 - Pending security release gate: public.user_roles RLS must be addressed with tested service-key authorization before a production release.
+
+## Hindi admin usability 2
+- Dashboard quick actions and Hindi workflow descriptions.
+- Admin article list search, status filtering, result count, reload and deletion error reporting.
+- Review queue actionable error reporting and future-time checks for scheduling.
+- Cleaner permission messages in role management. No production SQL or schema modifications.

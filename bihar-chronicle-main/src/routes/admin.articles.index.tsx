@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { adminListArticles, deleteArticle } from "@/lib/admin.functions";
 import { timeAgoHindi } from "@/lib/format";
-import { Plus, Trash2, Pencil, Star, Flame } from "lucide-react";
+import { Plus, Trash2, Pencil, Star, Flame, Search, RefreshCw } from "lucide-react";
 
 export const Route = createFileRoute("/admin/articles/")({
   component: ArticlesList,
@@ -13,13 +14,25 @@ function ArticlesList() {
   const listFn = useServerFn(adminListArticles);
   const delFn = useServerFn(deleteArticle);
   const qc = useQueryClient();
+  const [search,setSearch] = useState("");
+  const [status,setStatus] = useState("all");
+  const [actionError,setActionError] = useState("");
+  const [deleting,setDeleting] = useState<string|null>(null);
   const list = useQuery({ queryKey: ["admin-articles"], queryFn: () => listFn() });
+
+  const filtered = useMemo(() => (list.data ?? []).filter(a => (status === "all" || a.status === status) && (!search.trim() || a.title.toLowerCase().includes(search.trim().toLowerCase()) || a.slug.toLowerCase().includes(search.trim().toLowerCase()))), [list.data,search,status]);
 
   const remove = async (id: string) => {
     if (!confirm("क्या आप वाकई इस ख़बर को हटाना चाहते हैं?")) return;
-    await delFn({ data: { id } });
-    qc.invalidateQueries({ queryKey: ["admin-articles"] });
-    qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    setDeleting(id); setActionError("");
+    try {
+      await delFn({ data: { id } });
+      qc.invalidateQueries({ queryKey: ["admin-articles"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["admin-recent"] });
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "खबर नहीं हटाई जा सकी।");
+    } finally { setDeleting(null); }
   };
 
   return (
@@ -33,7 +46,30 @@ function ArticlesList() {
           <Plus className="h-4 w-4" /> नई ख़बर
         </Link>
       </div>
-      <div className="mt-6 rounded-xl border border-border bg-card overflow-x-auto">
+      <div className="mt-5 grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-[1fr_190px_auto]">
+        <label className="relative">
+          <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <span className="sr-only">खबरें खोजें</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="खबर के शीर्षक से खोजें..." className="w-full rounded-lg border border-border bg-background py-2.5 pl-9 pr-3 text-sm focus:border-primary focus:outline-none" />
+        </label>
+        <label>
+          <span className="sr-only">खबर की स्थिति चुनें</span>
+          <select value={status} onChange={e => setStatus(e.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary focus:outline-none">
+            <option value="all">सभी खबरें</option>
+            <option value="published">प्रकाशित</option>
+            <option value="draft">ड्राफ्ट</option>
+            <option value="review">समीक्षा</option>
+            <option value="scheduled">शेड्यूल्ड</option>
+          </select>
+        </label>
+        <button type="button" disabled={list.isFetching} onClick={() => list.refetch()} className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-bold hover:border-primary disabled:opacity-50">
+          <RefreshCw className="h-4 w-4" /> रीफ्रेश
+        </button>
+      </div>
+      <p className="text-xs text-muted-foreground">{list.isLoading ? "लोड हो रहा है..." : `${filtered.length} खबरें दिखाई जा रही हैं`}</p>
+      {actionError && <p role="alert" className="rounded-lg border border-destructive/30 p-3 text-sm text-destructive">{actionError}</p>}
+      {list.isError && <p role="alert" className="rounded-lg border border-destructive/30 p-3 text-sm text-destructive">खबरों की सूची अभी नहीं खुल पाई। रीफ्रेश करके देखें।</p>}
+      <div className="mt-3 rounded-xl border border-border bg-card overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
@@ -46,7 +82,7 @@ function ArticlesList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {list.data?.map((a) => (
+            {filtered.map((a) => (
               <tr key={a.id} className="hover:bg-muted/30">
                 <td className="px-4 py-3 font-medium max-w-xs truncate">{a.title}</td>
                 <td className="px-4 py-3 text-muted-foreground">{a.category?.name_hi ?? "—"}</td>
@@ -68,6 +104,7 @@ function ArticlesList() {
                   </Link>
                   <button
                     onClick={() => remove(a.id)}
+                    disabled={deleting !== null}
                     className="ml-2 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-3 w-3" /> हटाएँ
@@ -75,8 +112,8 @@ function ArticlesList() {
                 </td>
               </tr>
             ))}
-            {list.data?.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">अभी कोई ख़बर नहीं है।</td></tr>
+            {!list.isLoading && !list.isError && filtered.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">इस खोज या फ़िल्टर में कोई खबर नहीं मिली।</td></tr>
             )}
           </tbody>
         </table>

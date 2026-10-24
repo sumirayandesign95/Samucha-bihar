@@ -42,9 +42,9 @@ function UsersAdmin() {
       <div className="p-6 max-w-2xl mx-auto">
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h1 className="mt-3 font-display text-2xl font-bold">Super Admin only</h1>
+          <h1 className="mt-3 font-display text-2xl font-bold">केवल मुख्य एडमिन के लिए</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Only Super Admins can manage user roles.
+            यूज़र की भूमिका सिर्फ मुख्य एडमिन बदल सकता है।
           </p>
         </div>
       </div>
@@ -68,7 +68,7 @@ function UsersAdmin() {
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="font-display text-3xl font-bold">यूज़र की भूमिकाएँ</h1>
       <p className="text-sm text-muted-foreground mt-1">
-        Grant any combination of Super Admin / Admin / Editor / Reporter to each signed-up user.
+        यूज़र को कार्य के अनुसार एडमिन, एडिटर या रिपोर्टर की जिम्मेदारी दें।
       </p>
       {err && <p className="mt-3 text-sm text-destructive">{err}</p>}
 
@@ -76,7 +76,7 @@ function UsersAdmin() {
         <table className="min-w-full text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-4 py-3">User</th>
+              <th className="px-4 py-3">यूज़र</th>
               <th className="px-4 py-3">वर्तमान भूमिका</th>
               <th className="px-4 py-3 text-right">भूमिका दें</th>
             </tr>
@@ -89,12 +89,12 @@ function UsersAdmin() {
                   <td className="px-4 py-3">
                     <div className="font-medium">{u.email ?? "—"}</div>
                     <div className="text-xs text-muted-foreground">
-                      {u.last_sign_in_at ? `Last seen ${new Date(u.last_sign_in_at).toLocaleDateString()}` : "Never signed in"}
+                      {u.last_sign_in_at ? `पिछला लॉगिन: ${new Date(u.last_sign_in_at).toLocaleDateString()}` : "अभी लॉगिन नहीं किया"}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1.5">
-                      {u.roles.length === 0 && <span className="text-xs text-muted-foreground">No roles</span>}
+                      {u.roles.length === 0 && <span className="text-xs text-muted-foreground">कोई भूमिका नहीं</span>}
                       {u.roles.map((r) => (
                         <span key={r} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
                           {LABELS[r as (typeof ROLES)[number]] ?? r}
@@ -128,7 +128,7 @@ function UsersAdmin() {
                         ))}
                       </select>
                     ) : (
-                      <span className="text-xs text-muted-foreground">All assigned</span>
+                      <span className="text-xs text-muted-foreground">सभी भूमिकाएँ दी गई हैं</span>
                     )}
                   </td>
                 </tr>

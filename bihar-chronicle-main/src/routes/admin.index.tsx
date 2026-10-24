@@ -17,7 +17,15 @@ function Dashboard() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="font-display text-3xl font-bold">डैशबोर्ड</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <span className="text-xs font-bold tracking-widest text-primary">SAMUCHA BIHAR · NEWSROOM</span>
+          <h1 className="mt-1 font-display text-3xl font-extrabold">न्यूज़रूम डैशबोर्ड</h1>
+          <p className="mt-2 text-sm text-muted-foreground">खबरों की स्थिति देखें और अपना संपादकीय काम शुरू करें।</p>
+        </div>
+        <Link to="/admin/articles/new" className="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground">+ नई खबर लिखें</Link>
+      </div>
+      {stats.isError && <p role="alert" className="mt-4 rounded-lg border border-destructive/30 p-3 text-sm text-destructive">आंकड़े नहीं खुल पाए। कृपया फिर कोशिश करें।</p>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Stat label="कुल ख़बरें" value={stats.data?.total ?? 0} icon={<FileText className="h-5 w-5" />} />
         <Stat label="प्रकाशित" value={stats.data?.published ?? 0} icon={<CheckCircle2 className="h-5 w-5" />} color="text-green-600" />
@@ -27,6 +35,17 @@ function Dashboard() {
         <Stat label="ट्रेंडिंग" value={stats.data?.trending ?? 0} icon={<Flame className="h-5 w-5" />} color="text-primary" />
       </div>
 
+      <div className="mt-7 grid gap-3 sm:grid-cols-3">
+        <Link to="/admin/review" className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
+          <strong className="text-sm">समीक्षा हेतु खबरें</strong><p className="mt-1 text-xs text-muted-foreground">मंजूरी वाली खबरें देखें →</p>
+        </Link>
+        <Link to="/admin/articles" className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
+          <strong className="text-sm">सभी खबरें</strong><p className="mt-1 text-xs text-muted-foreground">खबरें खोजें और संपादित करें →</p>
+        </Link>
+        <Link to="/admin/media" className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
+          <strong className="text-sm">मीडिया लाइब्रेरी</strong><p className="mt-1 text-xs text-muted-foreground">फोटो और वीडियो प्रबंधन →</p>
+        </Link>
+      </div>
       <div className="mt-8 rounded-xl border border-border bg-card">
         <div className="px-5 py-3 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold">हाल की ख़बरें</h2>
@@ -51,6 +70,8 @@ function Dashboard() {
               </span>
             </Link>
           ))}
+          {recent.isLoading && <p className="px-5 py-6 text-sm text-muted-foreground">खबरें खुल रही हैं...</p>}
+          {recent.isError && <p role="alert" className="px-5 py-6 text-sm text-destructive">हाल की खबरों की सूची अभी नहीं खुली।</p>}
           {recent.data?.length === 0 && (
             <p className="px-5 py-8 text-center text-sm text-muted-foreground">अभी कोई ख़बर नहीं है।</p>
           )}
