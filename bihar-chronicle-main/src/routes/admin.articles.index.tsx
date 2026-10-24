@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminListArticles, deleteArticle } from "@/lib/admin.functions";
+import { adminListArticles, deleteArticle, checkAdmin } from "@/lib/admin.functions";
 import { timeAgoHindi } from "@/lib/format";
 import { Plus, Trash2, Pencil, Star, Flame, Search, RefreshCw } from "lucide-react";
 
@@ -19,10 +19,15 @@ function ArticlesList() {
   const [actionError,setActionError] = useState("");
   const [deleting,setDeleting] = useState<string|null>(null);
   const list = useQuery({ queryKey: ["admin-articles"], queryFn: () => listFn() });
+  const meFn = useServerFn(checkAdmin);
+  const me = useQuery({ queryKey: ["admin-me"], queryFn: () => meFn() });
+  const canDelete = !!me.data?.canPublish;
+  const isReporter = me.data?.role === "reporter";
 
   const filtered = useMemo(() => (list.data ?? []).filter(a => (status === "all" || a.status === status) && (!search.trim() || a.title.toLowerCase().includes(search.trim().toLowerCase()) || a.slug.toLowerCase().includes(search.trim().toLowerCase()))), [list.data,search,status]);
 
   const remove = async (id: string) => {
+    if (!canDelete) return;
     if (!confirm("क्या आप वाकई इस ख़बर को हटाना चाहते हैं?")) return;
     setDeleting(id); setActionError("");
     try {
@@ -95,20 +100,20 @@ function ArticlesList() {
                 </td>
                 <td className="px-4 py-3 text-muted-foreground text-xs">{timeAgoHindi(a.created_at)}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  <Link
+                  {(!isReporter || a.status !== "published") && <Link
                     to="/admin/articles/$id"
                     params={{ id: a.id }}
                     className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
                   >
                     <Pencil className="h-3 w-3" /> संपादित
-                  </Link>
-                  <button
+                  </Link>}
+                  {canDelete && <button
                     onClick={() => remove(a.id)}
                     disabled={deleting !== null}
-                    className="ml-2 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                    className="ml-2 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
                     <Trash2 className="h-3 w-3" /> हटाएँ
-                  </button>
+                  </button>}
                 </td>
               </tr>
             ))}

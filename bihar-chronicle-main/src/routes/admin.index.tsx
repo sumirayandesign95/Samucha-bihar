@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminStats, adminListArticles } from "@/lib/admin.functions";
+import { adminStats, adminListArticles, checkAdmin } from "@/lib/admin.functions";
 import { FileText, CheckCircle2, FileEdit, Flame, ClipboardCheck, Clock } from "lucide-react";
 import { timeAgoHindi } from "@/lib/format";
 
@@ -14,6 +14,8 @@ function Dashboard() {
   const listFn = useServerFn(adminListArticles);
   const stats = useQuery({ queryKey: ["admin-stats"], queryFn: () => statsFn() });
   const recent = useQuery({ queryKey: ["admin-recent"], queryFn: () => listFn() });
+  const meFn = useServerFn(checkAdmin);
+  const me = useQuery({ queryKey: ["admin-me"], queryFn: () => meFn() });
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -36,9 +38,9 @@ function Dashboard() {
       </div>
 
       <div className="mt-7 grid gap-3 sm:grid-cols-3">
-        <Link to="/admin/review" className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
+        {me.data?.canPublish && <Link to="/admin/review" className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
           <strong className="text-sm">समीक्षा हेतु खबरें</strong><p className="mt-1 text-xs text-muted-foreground">मंजूरी वाली खबरें देखें →</p>
-        </Link>
+        </Link>}
         <Link to="/admin/articles" className="rounded-xl border border-border bg-card p-4 transition hover:border-primary">
           <strong className="text-sm">सभी खबरें</strong><p className="mt-1 text-xs text-muted-foreground">खबरें खोजें और संपादित करें →</p>
         </Link>

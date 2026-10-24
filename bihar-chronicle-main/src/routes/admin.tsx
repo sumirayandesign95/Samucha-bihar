@@ -15,6 +15,7 @@ function AdminLayout() {
   const [state, setState] = useState<"loading" | "preview" | "anon" | "not-admin" | "admin">("loading");
   const [role, setRole] = useState<string | null>(null);
   const [canManageUsers, setCanManageUsers] = useState(false);
+  const [canPublish, setCanPublish] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const checkFn = useServerFn(checkAdmin);
   const previewFn = useServerFn(getPreviewStatus);
@@ -42,6 +43,7 @@ function AdminLayout() {
       setState(res.isAdmin ? "admin" : "not-admin");
       setRole(res.role ?? null);
       setCanManageUsers(!!res.canManageUsers);
+      setCanPublish(!!res.canPublish);
     } catch {
       setState("not-admin");
     }
@@ -129,12 +131,14 @@ function AdminLayout() {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           <SideLink to="/admin" exact icon={<LayoutDashboard className="h-4 w-4" />} label="डैशबोर्ड" pathname={pathname} />
           <SideLink to="/admin/articles" icon={<FileText className="h-4 w-4" />} label="ख़बरें" pathname={pathname} />
-          <SideLink to="/admin/review" icon={<ClipboardCheck className="h-4 w-4" />} label="समीक्षा के लिए खबरें" pathname={pathname} />
-          <SideLink to="/admin/categories" icon={<FolderTree className="h-4 w-4" />} label="श्रेणियाँ" pathname={pathname} />
-          <SideLink to="/admin/tags" icon={<Tags className="h-4 w-4" />} label="टैग" pathname={pathname} />
-          <SideLink to="/admin/authors" icon={<Users className="h-4 w-4" />} label="लेखक" pathname={pathname} />
+          {canPublish && <>
+            <SideLink to="/admin/review" icon={<ClipboardCheck className="h-4 w-4" />} label="समीक्षा के लिए खबरें" pathname={pathname} />
+            <SideLink to="/admin/categories" icon={<FolderTree className="h-4 w-4" />} label="श्रेणियाँ" pathname={pathname} />
+            <SideLink to="/admin/tags" icon={<Tags className="h-4 w-4" />} label="टैग" pathname={pathname} />
+            <SideLink to="/admin/authors" icon={<Users className="h-4 w-4" />} label="लेखक" pathname={pathname} />
+          </>}
           <SideLink to="/admin/media" icon={<Image className="h-4 w-4" />} label="मीडिया लाइब्रेरी" pathname={pathname} />
-          <SideLink to="/admin/breaking" icon={<Megaphone className="h-4 w-4" />} label="ब्रेकिंग न्यूज़" pathname={pathname} />
+          {canPublish && <SideLink to="/admin/breaking" icon={<Megaphone className="h-4 w-4" />} label="ब्रेकिंग न्यूज़" pathname={pathname} />}
           {canManageUsers && (
             <SideLink to="/admin/users" icon={<ShieldCheck className="h-4 w-4" />} label="यूज़र और भूमिकाएँ" pathname={pathname} />
           )}
@@ -160,12 +164,14 @@ function AdminLayout() {
         <header className="md:hidden border-b border-border bg-card px-4 py-3 flex items-center gap-3 overflow-x-auto">
           <Link to="/admin" className="text-sm font-semibold">डैशबोर्ड</Link>
           <Link to="/admin/articles" className="text-sm">ख़बरें</Link>
-          <Link to="/admin/review" className="text-sm">समीक्षा</Link>
-          <Link to="/admin/categories" className="text-sm">श्रेणियाँ</Link>
-          <Link to="/admin/tags" className="text-sm">टैग</Link>
-          <Link to="/admin/authors" className="text-sm">लेखक</Link>
+          {canPublish && <>
+            <Link to="/admin/review" className="text-sm">समीक्षा</Link>
+            <Link to="/admin/categories" className="text-sm">श्रेणियाँ</Link>
+            <Link to="/admin/tags" className="text-sm">टैग</Link>
+            <Link to="/admin/authors" className="text-sm">लेखक</Link>
+          </>}
           <Link to="/admin/media" className="text-sm">मीडिया लाइब्रेरी</Link>
-          <Link to="/admin/breaking" className="text-sm">ब्रेकिंग</Link>
+          {canPublish && <Link to="/admin/breaking" className="text-sm">ब्रेकिंग</Link>}
           {canManageUsers && <Link to="/admin/users" className="text-sm">यूज़र</Link>}
           <Link to="/admin/articles/new" className="text-sm text-primary">+ नई</Link>
           <button onClick={signOut} className="ml-auto text-sm">साइन आउट</button>

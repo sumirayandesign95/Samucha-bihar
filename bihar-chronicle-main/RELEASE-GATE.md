@@ -35,3 +35,9 @@ Status: BLOCKED. The user has approved the future website launch, but successful
 - Google News, sitemap, and performance testing need separate verification.
 
 Supabase RLS docs: https://supabase.com/docs/guides/database/postgres/row-level-security
+
+## Additional audit 24 October 2026
+- Confirmed 16 published articles, two staff rows (one admin and one super_admin), and 22 media files in public news-images storage. Read-only counts only; no user identities read.
+- `has_role` / `has_any_role` are SECURITY INVOKER and read public.user_roles; after enabling RLS the authenticated policy must continue to allow each user to read their own roles for media uploads to work. Test this explicitly.
+- Supabase separate test branch quote: $0.01344 per hour, requiring owner cost approval before creation. Do not create it without explicit acceptance.
+- Admin UI now hides editor-only navigation and delete controls from reporter role; server-side requireEditor and requireSuperAdmin checks remain authoritative.
