@@ -18,6 +18,7 @@ import {
   checkAdmin,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { BIHAR_DISTRICTS, districtTag, cityTag, findDistrict } from "@/lib/bihar-districts";
 
 // ---------------- helpers ----------------
 
@@ -317,6 +318,26 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
   const removeTag = (t: string) => {
     setForm((f) => ({ ...f, tags: f.tags.filter((x) => x !== t) }));
     setDirty(true);
+  };
+
+  // District/city metadata is stored in the existing tags array, so Preview
+  // needs no schema migrations. It is only saved when the editor saves the article.
+  const selectedDistrictSlug = form.tags.find((tag) => tag.startsWith("जिला:"))?.slice("जिला:".length) ?? "";
+  const selectedCitySlug = form.tags.find((tag) => tag.startsWith("शहर:"))?.slice("शहर:".length) ?? "";
+  const selectedDistrict = findDistrict(selectedDistrictSlug);
+
+  const chooseLocation = (districtSlug: string, citySlug = "") => {
+    const district = findDistrict(districtSlug);
+    const safeCity = district?.cities.some((city) => city.slug === citySlug) ? citySlug : "";
+    const kept = form.tags.filter((tag) => !tag.startsWith("जिला:") && !tag.startsWith("शहर:"));
+    const nextTags = district
+      ? [...kept, districtTag(district.slug), ...(safeCity ? [cityTag(safeCity)] : [])]
+      : kept;
+    if (nextTags.length > 15) {
+      toast.error("जिला जोड़ने के लिए कुछ अन्य टैग हटाएँ (अधिकतम 15 टैग)");
+      return;
+    }
+    update("tags", nextTags);
   };
 
   const validate = (forPublish: boolean): string | null => {
@@ -631,6 +652,40 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
                   <input value={form.subcategory} onChange={(e) => update("subcategory", e.target.value)} placeholder={form.category_id ? "कोई उप-श्रेणी नहीं" : "पहले श्रेणी चुनें"} disabled={!form.category_id} className="ae-input" />
                 )}
               </Field>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <h3 className="mb-3 text-sm font-bold text-foreground">स्थानीय खबर का स्थान</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="जिला (यदि खबर स्थानीय है)">
+                  <select
+                    className="ae-input"
+                    value={selectedDistrictSlug}
+                    onChange={(e) => chooseLocation(e.target.value)}
+                  >
+                    <option value="">— सभी बिहार / कोई जिला नहीं —</option>
+                    {BIHAR_DISTRICTS.map((district) => (
+                      <option key={district.slug} value={district.slug}>{district.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="शहर / क्षेत्र (वैकल्पिक)">
+                  <select
+                    className="ae-input"
+                    disabled={!selectedDistrict}
+                    value={selectedCitySlug}
+                    onChange={(e) => chooseLocation(selectedDistrictSlug, e.target.value)}
+                  >
+                    <option value="">— पूरा जिला —</option>
+                    {selectedDistrict?.cities.map((city) => (
+                      <option key={city.slug} value={city.slug}>{city.name}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                खबर सेव करने पर जिला/शहर की पहचान टैग के रूप में जुड़ेगी और संबंधित स्थानीय पेज पर खबर दिखाई देगी।
+              </p>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-4 shadow-sm">

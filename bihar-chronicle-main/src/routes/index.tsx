@@ -3,6 +3,7 @@ import { queryOptions, useInfiniteQuery, useSuspenseQuery } from "@tanstack/reac
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, Flame, Newspaper, TrendingUp } from "lucide-react";
 import { BreakingTicker } from "@/components/site/BreakingTicker";
+import { DistrictSelectorCard } from "@/components/site/DistrictSelector";
 import { NewsCard, type Article } from "@/components/site/NewsCard";
 import { timeAgoHindi } from "@/lib/format";
 import { getHomeBundle, listFeed } from "@/lib/news.functions";
@@ -65,6 +66,7 @@ function HomePage() {
           </Link>
         </div>
 
+        <div className="mb-8"><DistrictSelectorCard /></div>
         {!hasContent ? (
           <EmptyState />
         ) : (

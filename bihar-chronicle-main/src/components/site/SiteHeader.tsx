@@ -44,6 +44,7 @@ export function SiteHeader({ categories }: { categories: CategoryLink[] }) {
           <div className="flex items-center gap-5">
             <Link to="/about" className="hover:text-primary">हमारे बारे में</Link>
             <Link to="/contact" className="hover:text-primary">संपर्क करें</Link>
+            <Link to="/districts" className="font-semibold hover:text-primary">अपने शहर की खबरें</Link>
           </div>
         </div>
       </div>
@@ -111,6 +112,7 @@ export function SiteHeader({ categories }: { categories: CategoryLink[] }) {
       <nav aria-label="मुख्य समाचार श्रेणियां" className="hidden bg-[#171b22] text-white lg:block">
         <div className="container mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4">
           <DesktopLink to="/" label="मुखपृष्ठ" />
+          <DesktopLink to="/districts" label="जिला / शहर चुनें" />
           {categories.map((category) => (
             <DesktopLink key={category.slug} to={`/category/${category.slug}`} label={category.name_hi} />
           ))}
@@ -134,6 +136,7 @@ export function SiteHeader({ categories }: { categories: CategoryLink[] }) {
           </form>
           <nav aria-label="मोबाइल समाचार श्रेणियां" className="mt-4 grid grid-cols-2 gap-2">
             <MobileLink to="/" label="मुखपृष्ठ" close={() => setMenuOpen(false)} />
+            <MobileLink to="/districts" label="जिला / शहर चुनें" close={() => setMenuOpen(false)} />
             {categories.map((category) => (
               <MobileLink key={category.slug} to={`/category/${category.slug}`} label={category.name_hi} close={() => setMenuOpen(false)} />
             ))}

@@ -25,3 +25,12 @@ Branch: `development/premium-hindi-newsroom`.
 ## Runtime dependency compatibility (follow-up)
 - Pin matching TanStack family versions: react-start 1.168.60; react-router 1.170.41; router-plugin 1.168.42; router-core 1.171.34; start-server-core 1.169.39.
 - All modifications remain on the development branch. No production deploy.
+
+## District and City Edition (second preview milestone)
+- Reviewed UI/navigation patterns of Jagran and Live Hindustan (city selection, scannable news) and incorporated a distinct Bihar-first layout.
+- 38 verified Bihar districts, each with a curated list of representative cities/towns; not a complete village directory.
+- Added `/districts` directory and `/district/$slug` filterable news pages, with city query parameter.
+- Added responsive district/city selector to homepage and global navigation.
+- Added district/city fields in the existing article editor. Existing `tags` array stores `जिला:<slug>` and `शहर:<slug>` values.
+- Old news stays untouched and is not silently classified. Empty district pages show a truthful no-content message.
+- No DB schema change, role/policy modification, or production deployment.
