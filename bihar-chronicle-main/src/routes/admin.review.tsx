@@ -34,7 +34,7 @@ function ReviewQueue() {
     }
   };
   const reject = async (id: string) => {
-    const note = prompt("Reason for rejection (sent back to reporter):");
+    const note = prompt("अस्वीकृति का कारण लिखें (रिपोर्टर को दिखेगा):");
     if (!note?.trim()) return;
     setBusyId(id);
     try {
@@ -47,14 +47,14 @@ function ReviewQueue() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="font-display text-3xl font-bold">Review Queue</h1>
-      <p className="text-sm text-muted-foreground mt-1">Articles awaiting editor approval.</p>
+      <h1 className="font-display text-3xl font-bold">समीक्षा हेतु खबरें</h1>
+      <p className="text-sm text-muted-foreground mt-1">संपादक द्वारा जाँच और स्वीकृति के लिए भेजी गई खबरें।</p>
 
       <div className="mt-6 space-y-3">
         {isLoading && <p className="text-sm text-muted-foreground">लोड हो रहा है...</p>}
         {!isLoading && data.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
-            No articles awaiting review. 🎉
+            इस समय समीक्षा के लिए कोई खबर नहीं है।
           </div>
         )}
         {data.map((a) => (
@@ -74,7 +74,7 @@ function ReviewQueue() {
                   value={scheduleAt[a.id] ?? ""}
                   onChange={(e) => setScheduleAt({ ...scheduleAt, [a.id]: e.target.value })}
                   className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-                  title="Optional: schedule publish time"
+                  title="प्रकाशन का समय चुनें (वैकल्पिक)"
                 />
                 <button
                   disabled={busyId === a.id}
@@ -82,14 +82,14 @@ function ReviewQueue() {
                   className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                 >
                   <Check className="h-3.5 w-3.5" />
-                  {scheduleAt[a.id] ? "Schedule" : "Publish"}
+                  {scheduleAt[a.id] ? "शेड्यूल करें" : "प्रकाशित करें"}
                 </button>
                 <button
                   disabled={busyId === a.id}
                   onClick={() => reject(a.id)}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs text-destructive disabled:opacity-50"
                 >
-                  <X className="h-3.5 w-3.5" /> Reject
+                  <X className="h-3.5 w-3.5" /> अस्वीकार करें
                 </button>
               </div>
             </div>

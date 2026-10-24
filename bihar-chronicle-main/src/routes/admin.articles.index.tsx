@@ -95,8 +95,8 @@ function StatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = {
     published: "प्रकाशित",
     draft: "ड्राफ़्ट",
-    review: "Review",
-    scheduled: "Scheduled",
+    review: "समीक्षा",
+    scheduled: "शेड्यूल्ड",
   };
   return (
     <span className={`text-xs rounded-full px-2 py-0.5 ${styles[status] ?? styles.draft}`}>

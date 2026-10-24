@@ -55,3 +55,7 @@ Branch: `development/premium-hindi-newsroom`.
 - Article body now renders escaped text on SSR and first hydration; sanitized rich HTML appears after hydration.
 - Admin editor loads saved HTML through DOMPurify and sanitizes its preview before rendering.
 - Production, live content and database remain unchanged. A separate staging database remains the recommended prerequisite for enabling Preview editing.
+
+## Admin usability milestone
+- Localize newsroom dashboard, review queue, role labels and article status badges in Hindi.
+- Pending security release gate: public.user_roles RLS must be addressed with tested service-key authorization before a production release.

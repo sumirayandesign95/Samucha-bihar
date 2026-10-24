@@ -66,7 +66,7 @@ function UsersAdmin() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="font-display text-3xl font-bold">User Roles</h1>
+      <h1 className="font-display text-3xl font-bold">यूज़र की भूमिकाएँ</h1>
       <p className="text-sm text-muted-foreground mt-1">
         Grant any combination of Super Admin / Admin / Editor / Reporter to each signed-up user.
       </p>
@@ -77,8 +77,8 @@ function UsersAdmin() {
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="px-4 py-3">User</th>
-              <th className="px-4 py-3">Current roles</th>
-              <th className="px-4 py-3 text-right">Grant role</th>
+              <th className="px-4 py-3">वर्तमान भूमिका</th>
+              <th className="px-4 py-3 text-right">भूमिका दें</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -135,7 +135,7 @@ function UsersAdmin() {
               );
             })}
             {users.data?.length === 0 && (
-              <tr><td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">No users yet.</td></tr>
+              <tr><td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">अभी कोई यूज़र नहीं है।</td></tr>
             )}
           </tbody>
         </table>

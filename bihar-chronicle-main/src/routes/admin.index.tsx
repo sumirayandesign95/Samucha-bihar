@@ -22,8 +22,8 @@ function Dashboard() {
         <Stat label="कुल ख़बरें" value={stats.data?.total ?? 0} icon={<FileText className="h-5 w-5" />} />
         <Stat label="प्रकाशित" value={stats.data?.published ?? 0} icon={<CheckCircle2 className="h-5 w-5" />} color="text-green-600" />
         <Stat label="ड्राफ़्ट" value={stats.data?.drafts ?? 0} icon={<FileEdit className="h-5 w-5" />} color="text-amber-600" />
-        <Stat label="Review" value={stats.data?.review ?? 0} icon={<ClipboardCheck className="h-5 w-5" />} color="text-amber-700" />
-        <Stat label="Scheduled" value={stats.data?.scheduled ?? 0} icon={<Clock className="h-5 w-5" />} color="text-blue-600" />
+        <Stat label="समीक्षा" value={stats.data?.review ?? 0} icon={<ClipboardCheck className="h-5 w-5" />} color="text-amber-700" />
+        <Stat label="शेड्यूल्ड" value={stats.data?.scheduled ?? 0} icon={<Clock className="h-5 w-5" />} color="text-blue-600" />
         <Stat label="ट्रेंडिंग" value={stats.data?.trending ?? 0} icon={<Flame className="h-5 w-5" />} color="text-primary" />
       </div>
 
