@@ -21,3 +21,7 @@ Branch: `development/premium-hindi-newsroom`.
 - Pinned `@tanstack/react-start` to patched 1.168.60 (CVE-2026-102989).
 - Removed view-count writes from article GET to keep Preview browsing read-only.
 - The build environment refreshes dependency resolution via `bun install`; reconcile and commit a regenerated `bun.lock` before enabling frozen-lockfile CI or production promotion.
+
+## Runtime dependency compatibility (follow-up)
+- Pin matching TanStack family versions: react-start 1.168.60; react-router 1.170.41; router-plugin 1.168.42; router-core 1.171.34; start-server-core 1.169.39.
+- All modifications remain on the development branch. No production deploy.
