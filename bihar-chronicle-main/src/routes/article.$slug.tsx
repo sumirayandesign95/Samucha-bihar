@@ -6,6 +6,7 @@ import { Share2, Facebook, Twitter, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ArticleBody } from "@/components/site/ArticleBody";
 import { findDistrict } from "@/lib/bihar-districts";
+import { absoluteSiteUrl, SITE_URL, safeJsonLd } from "@/lib/seo";
 
 export const Route = createFileRoute("/article/$slug")({
   loader: async ({ params }) => {
@@ -16,15 +17,38 @@ export const Route = createFileRoute("/article/$slug")({
   head: ({ loaderData }) => {
     if (!loaderData?.article) return { meta: [] };
     const a = loaderData.article;
+    const url = absoluteSiteUrl(`/article/${encodeURIComponent(a.slug)}`);
+    const title = a.seo_title || a.title;
+    const description = a.seo_description || a.summary || a.subtitle || a.title;
+    const structuredArticle = {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      headline: a.title,
+      description,
+      url,
+      mainEntityOfPage: { "@type": "WebPage", "@id": url },
+      inLanguage: "hi",
+      ...(a.image_url ? { image: [a.image_url] } : {}),
+      ...(a.published_at ? { datePublished: a.published_at } : {}),
+      ...(a.updated_at ? { dateModified: a.updated_at } : {}),
+      ...(a.author?.name ? { author: [{ "@type": "Person", name: a.author.name }] } : {}),
+      ...(a.category?.name_hi ? { articleSection: a.category.name_hi } : {}),
+      publisher: { "@type": "Organization", name: "समूचा बिहार", url: SITE_URL },
+    };
     return {
       meta: [
-        { title: `${a.title} — समूचा बिहार` },
-        { name: "description", content: a.summary ?? a.subtitle ?? a.title },
-        { property: "og:title", content: a.title },
-        { property: "og:description", content: a.summary ?? "" },
-        ...(a.image_url ? [{ property: "og:image", content: a.image_url }] : []),
+        { title: `${title} — समूचा बिहार` },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
         { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        ...(a.image_url ? [{ property: "og:image", content: a.image_url }] : []),
+        ...(a.published_at ? [{ property: "article:published_time", content: a.published_at }] : []),
+        { name: "twitter:card", content: a.image_url ? "summary_large_image" : "summary" },
       ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{ type: "application/ld+json", children: safeJsonLd(structuredArticle) }],
     };
   },
   component: ArticlePage,
@@ -138,6 +162,9 @@ function ArticlePage() {
           src={article.image_url}
           alt={article.title}
           className="mt-6 w-full rounded-xl object-cover aspect-[16/9]"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
         />
       )}
 

@@ -144,7 +144,7 @@ export const getArticle = createServerFn({ method: "GET" })
     const { data: article, error } = await supabaseAdmin
       .from("news_articles")
       .select(
-        "id,slug,title,subtitle,summary,content,image_url,tags,published_at,view_count,category:categories(slug,name_hi,name_en),author:authors(name,bio,avatar_url)",
+        "id,slug,title,subtitle,summary,seo_title,seo_description,content,image_url,tags,published_at,updated_at,view_count,category:categories(slug,name_hi,name_en),author:authors(name,bio,avatar_url)",
       )
       .eq("slug", data.slug)
       .eq("status", "published")
