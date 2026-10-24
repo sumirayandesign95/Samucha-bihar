@@ -65,3 +65,8 @@ Branch: `development/premium-hindi-newsroom`.
 - Admin article list search, status filtering, result count, reload and deletion error reporting.
 - Review queue actionable error reporting and future-time checks for scheduling.
 - Cleaner permission messages in role management. No production SQL or schema modifications.
+
+## Release gate hardening
+- Privileged admin client now fails closed without server-only SUPABASE_SERVICE_ROLE_KEY.
+- Added migration blueprint for RLS and role privileges, intentionally unapplied.
+- Added pre-release staging tests, backup, migration order, and rollback checklist.
