@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -223,7 +224,7 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
       setRejectionNote(a.rejection_note ?? null);
       queueMicrotask(() => {
         if (editorRef.current && editorRef.current.innerHTML.trim() === "") {
-          editorRef.current.innerHTML = a.content ?? "";
+          editorRef.current.innerHTML = DOMPurify.sanitize(a.content ?? "");
         }
       });
       setDirty(false);
@@ -878,7 +879,7 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
               <button onClick={() => setPreview(false)} className="rounded-md border border-border p-1.5 hover:bg-muted"><X className="h-4 w-4" /></button>
             </div>
             {form.image_url && <img src={form.image_url} alt="" className="mt-4 aspect-video w-full rounded-lg object-cover" />}
-            <div className="prose prose-lg dark:prose-invert mt-5 max-w-none" dangerouslySetInnerHTML={{ __html: form.content }} />
+            <div className="prose prose-lg dark:prose-invert mt-5 max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.content) }} />
           </div>
         </div>
       )}

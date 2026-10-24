@@ -49,3 +49,9 @@ Branch: `development/premium-hindi-newsroom`.
 - All 15 server-side admin POST handlers now check that the deployment is Vercel production on main before writing; all other environments are denied.
 - Live database schema, records, permissions and production branch are unchanged.
 - Remaining: isolated staging Supabase project and end-to-end browser testing before production deployment.
+
+## HTML rendering and build fix
+- Corrected a translated icon symbol in admin imports (`Tags`), preserving Hindi display labels.
+- Article body now renders escaped text on SSR and first hydration; sanitized rich HTML appears after hydration.
+- Admin editor loads saved HTML through DOMPurify and sanitizes its preview before rendering.
+- Production, live content and database remain unchanged. A separate staging database remains the recommended prerequisite for enabling Preview editing.

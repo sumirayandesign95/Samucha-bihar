@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { checkAdmin, getPreviewStatus } from "@/lib/admin.functions";
-import { LayoutDashboard, FileText, Megaphone, LogOut, Plus, FolderTree, टैग, Users, Image, ClipboardCheck, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, FileText, Megaphone, LogOut, Plus, FolderTree, Tags, Users, Image, ClipboardCheck, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "एडमिन — समूचा बिहार" }] }),
@@ -131,7 +131,7 @@ function AdminLayout() {
           <SideLink to="/admin/articles" icon={<FileText className="h-4 w-4" />} label="ख़बरें" pathname={pathname} />
           <SideLink to="/admin/review" icon={<ClipboardCheck className="h-4 w-4" />} label="समीक्षा के लिए खबरें" pathname={pathname} />
           <SideLink to="/admin/categories" icon={<FolderTree className="h-4 w-4" />} label="श्रेणियाँ" pathname={pathname} />
-          <SideLink to="/admin/tags" icon={<टैग className="h-4 w-4" />} label="टैग" pathname={pathname} />
+          <SideLink to="/admin/tags" icon={<Tags className="h-4 w-4" />} label="टैग" pathname={pathname} />
           <SideLink to="/admin/authors" icon={<Users className="h-4 w-4" />} label="लेखक" pathname={pathname} />
           <SideLink to="/admin/media" icon={<Image className="h-4 w-4" />} label="मीडिया लाइब्रेरी" pathname={pathname} />
           <SideLink to="/admin/breaking" icon={<Megaphone className="h-4 w-4" />} label="ब्रेकिंग न्यूज़" pathname={pathname} />
