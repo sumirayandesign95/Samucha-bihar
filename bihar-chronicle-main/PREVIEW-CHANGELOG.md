@@ -16,3 +16,8 @@ Branch: `development/premium-hindi-newsroom`.
 - No production deployment, aliases, or domain changes.
 - Check Preview environment variables are configured safely.
 - Before a production merge, resolve the pre-existing RLS vulnerability on `public.user_roles` with tested policies; also review article HTML sanitization and deploy monitoring.
+
+## Security dependency update
+- Pinned `@tanstack/react-start` to patched 1.168.60 (CVE-2026-102989).
+- Removed view-count writes from article GET to keep Preview browsing read-only.
+- The build environment refreshes dependency resolution via `bun install`; reconcile and commit a regenerated `bun.lock` before enabling frozen-lockfile CI or production promotion.

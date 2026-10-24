@@ -141,10 +141,8 @@ export const getArticle = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!article) return { article: null, related: [] };
 
-    await supabaseAdmin
-      .from("news_articles")
-      .update({ view_count: (article.view_count ?? 0) + 1 })
-      .eq("id", article.id);
+    // Preview browsing must never mutate published news records.
+    // View counting will be reintroduced through a separate, protected analytics path.
 
     let relatedQuery = supabaseAdmin
       .from("news_articles")
