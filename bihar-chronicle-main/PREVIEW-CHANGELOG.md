@@ -34,3 +34,9 @@ Branch: `development/premium-hindi-newsroom`.
 - Added district/city fields in the existing article editor. Existing `tags` array stores `जिला:<slug>` and `शहर:<slug>` values.
 - Old news stays untouched and is not silently classified. Empty district pages show a truthful no-content message.
 - No DB schema change, role/policy modification, or production deployment.
+
+## Article reading experience
+- Localized absolute publication dates (Asia/Kolkata) in article meta.
+- Added reading-time estimate and A-/A+ adjustable text for accessibility.
+- Added newspaper-style Hindi article typography and clearer paragraph spacing.
+- Existing article body text, authors, publication dates and media preserved.

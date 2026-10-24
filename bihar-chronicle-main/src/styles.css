@@ -171,3 +171,30 @@
   .ticker-track { animation: none; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
+
+/* Readable long-form Hindi news without changing the admin editor styles. */
+.article-body {
+  font-size: inherit;
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+}
+.article-body p { margin: 0 0 1.35em; }
+.article-body h2, .article-body h3 {
+  margin: 1.7em 0 .65em;
+  color: var(--color-foreground);
+  line-height: 1.55;
+}
+.article-body h2 { font-size: 1.3em; font-weight: 800; }
+.article-body h3 { font-size: 1.15em; font-weight: 750; }
+.article-body ul, .article-body ol { margin: 0 0 1.3em; padding-left: 1.6em; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin: .35em 0; }
+.article-body a { color: var(--color-primary); text-decoration: underline; text-underline-offset: .15em; }
+.article-body img { max-width: 100%; height: auto; border-radius: .75rem; }
+.article-body blockquote {
+  margin: 1.5em 0;
+  padding: .5em 1em;
+  border-left: 4px solid var(--color-primary);
+  background: var(--color-muted);
+}

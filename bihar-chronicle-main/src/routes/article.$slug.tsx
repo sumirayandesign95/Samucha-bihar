@@ -40,6 +40,7 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticlePage() {
   const { article: loadedArticle, related } = Route.useLoaderData();
   const [progress, setProgress] = useState(0);
+  const [readerFontSize, setReaderFontSize] = useState(20);
   useEffect(() => {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -52,6 +53,16 @@ function ArticlePage() {
 
   if (!loadedArticle) return null;
   const article = loadedArticle;
+  // Reading time is an estimate for the article body, not a guarantee.
+  const textOnly = article.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const readingMinutes = Math.max(1, Math.ceil((textOnly ? textOnly.split(" ").length : 0) / 180));
+  const absoluteDate = article.published_at
+    ? new Intl.DateTimeFormat("hi-IN", {
+        timeZone: "Asia/Kolkata",
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(article.published_at))
+    : null;
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = encodeURIComponent(article.title);
@@ -98,6 +109,8 @@ function ArticlePage() {
           </span>
         )}
         <span>{timeAgoHindi(article.published_at)}</span>
+        {absoluteDate && <time dateTime={article.published_at ?? undefined}>{absoluteDate}</time>}
+        <span>{readingMinutes} मिनट की पढ़ाई</span>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs flex items-center gap-1"><Share2 className="h-3 w-3" /> शेयर:</span>
           <a target="_blank" rel="noopener" href={`https://wa.me/?text=${shareText}%20${enc}`} className="rounded-md border border-border p-1.5 hover:bg-muted" aria-label="WhatsApp">
@@ -120,7 +133,18 @@ function ArticlePage() {
         />
       )}
 
-      <ArticleBody content={article.content} />
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3" aria-label="पढ़ने की सुविधा">
+        <span className="text-sm font-bold">अपने हिसाब से टेक्स्ट पढ़ें</span>
+        <div className="flex items-center gap-1">
+          <button type="button" disabled={readerFontSize <= 18} aria-label="अक्षर छोटे करें" onClick={() => setReaderFontSize((size) => Math.max(18, size - 2))} className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold disabled:opacity-40">अ−</button>
+          <span className="min-w-12 text-center text-xs text-muted-foreground" aria-live="polite">{readerFontSize}px</span>
+          <button type="button" disabled={readerFontSize >= 24} aria-label="अक्षर बड़े करें" onClick={() => setReaderFontSize((size) => Math.min(24, size + 2))} className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold disabled:opacity-40">अ+</button>
+        </div>
+      </div>
+
+      <div style={{ fontSize: `${readerFontSize}px` }}>
+        <ArticleBody content={article.content} />
+      </div>
 
       {article.tags && article.tags.length > 0 && (
         <div className="mt-8 flex flex-wrap gap-2">
