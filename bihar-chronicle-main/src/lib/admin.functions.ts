@@ -12,6 +12,19 @@ import {
   type Role,
 } from "./admin.server";
 
+// Preview shares the production database: only the production deployment may mutate it.
+// Keep this server-side check for ALL admin POST functions, including role/bootstrap APIs.
+function assertProductionWriteAccess() {
+  if (process.env.VERCEL_ENV !== "production" || process.env.VERCEL_GIT_COMMIT_REF !== "main") {
+    throw new Error("सुरक्षा: टेस्ट वेबसाइट पर सेव, पब्लिश या डिलीट बंद हैं। लाइव समाचार सुरक्षित हैं।");
+  }
+}
+
+export const getPreviewStatus = createServerFn({ method: "GET" })
+  .handler(async () => ({
+    readOnly: process.env.VERCEL_ENV !== "production" || process.env.VERCEL_GIT_COMMIT_REF !== "main",
+  }));
+
 // Sanitize any incoming slug so a save never fails on it. If nothing usable
 // remains, fall back to a timestamped slug so drafts can always be saved.
 const slugSchema = z
@@ -47,6 +60,7 @@ export const checkAdmin = createServerFn({ method: "GET" })
 export const claimFirstAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    assertProductionWriteAccess();
     const admin = getAdminClient();
     const { count, error: countError } = await admin
       .from("user_roles")
@@ -135,6 +149,7 @@ export const upsertArticle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => ArticleInput.parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     const role = await requireStaff(context.userId);
     const isReporter = role === "reporter";
     const { id, ...rest } = data;
@@ -195,6 +210,7 @@ export const deleteArticle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const { error } = await getAdminClient().from("news_articles").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -244,6 +260,7 @@ export const adminUpsertAuthor = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireStaff(context.userId);
     const { id, ...rest } = {
       ...data,
@@ -265,6 +282,7 @@ export const adminDeleteAuthor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const { error } = await getAdminClient().from("authors").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -298,6 +316,7 @@ export const adminUpsertCategory = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const { id, ...rest } = data;
     if (id && rest.parent_id === id) throw new Error("A category cannot be its own parent");
@@ -313,6 +332,7 @@ export const adminDeleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const { error } = await getAdminClient().from("categories").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -352,6 +372,7 @@ export const adminUpsertBreaking = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const payload = { ...data, link: data.link || null };
     const admin = getAdminClient();
@@ -366,6 +387,7 @@ export const adminDeleteBreaking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const { error } = await getAdminClient().from("breaking_news").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -395,6 +417,7 @@ export const adminApproveArticle = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), publishAt: z.string().datetime().nullable().optional() }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const publishAt = data.publishAt && new Date(data.publishAt) > new Date() ? data.publishAt : null;
     const { error } = await getAdminClient()
@@ -415,6 +438,7 @@ export const adminRejectArticle = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), note: z.string().min(1).max(800) }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const { error } = await getAdminClient()
       .from("news_articles")
@@ -432,6 +456,7 @@ export const adminRenameTag = createServerFn({ method: "POST" })
     z.object({ from: z.string().min(1).max(40), to: z.string().min(1).max(40) }).parse(d),
   )
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const admin = getAdminClient();
     const { data: rows, error } = await admin
@@ -450,6 +475,7 @@ export const adminDeleteTag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ name: z.string().min(1).max(40) }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireEditor(context.userId);
     const admin = getAdminClient();
     const { data: rows, error } = await admin
@@ -496,6 +522,7 @@ export const adminAssignRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ userId: z.string().uuid(), role: RoleEnum }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireSuperAdmin(context.userId);
     const { error } = await getAdminClient()
       .from("user_roles")
@@ -508,6 +535,7 @@ export const adminRemoveRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ userId: z.string().uuid(), role: RoleEnum }).parse(d))
   .handler(async ({ context, data }) => {
+    assertProductionWriteAccess();
     await requireSuperAdmin(context.userId);
     const admin = getAdminClient();
     if (data.userId === context.userId && data.role === "super_admin") {

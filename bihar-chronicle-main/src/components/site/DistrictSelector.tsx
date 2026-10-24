@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { MapPin, ArrowRight } from "lucide-react";
 import { BIHAR_DISTRICTS, findDistrict } from "@/lib/bihar-districts";
 
@@ -73,6 +73,26 @@ export function DistrictSelectorCard() {
         </div>
       </div>
       <DistrictSelector />
+      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        <span className="mr-1 text-xs font-semibold text-muted-foreground">सीधे जिला खोलें:</span>
+        {["patna", "gaya", "muzaffarpur", "darbhanga", "bhagalpur", "purnia"].map((slug) => {
+          const district = findDistrict(slug);
+          return district ? (
+            <Link
+              key={district.slug}
+              to="/district/$slug"
+              params={{ slug: district.slug }}
+              search={{ city: undefined }}
+              className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-bold hover:border-primary hover:text-primary"
+            >
+              {district.name}
+            </Link>
+          ) : null;
+        })}
+        <Link to="/districts" className="ml-auto text-xs font-bold text-primary underline underline-offset-4">
+          सभी 38 जिले
+        </Link>
+      </div>
     </section>
   );
 }

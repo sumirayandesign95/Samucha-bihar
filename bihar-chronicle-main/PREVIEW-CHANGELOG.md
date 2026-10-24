@@ -40,3 +40,12 @@ Branch: `development/premium-hindi-newsroom`.
 - Added reading-time estimate and A-/A+ adjustable text for accessibility.
 - Added newspaper-style Hindi article typography and clearer paragraph spacing.
 - Existing article body text, authors, publication dates and media preserved.
+
+## Reader ease of use and Preview safeguards
+- Six quick district links under the location picker; links avoid unnecessary dropdown steps.
+- News stories link official district/city tags back to local editions instead of exposing machine-readable metadata.
+- Replaced dummy footer social placeholders and an unverified email with functional internal links.
+- Preview admin routes show a read-only notice instead of loading edit and media-upload interfaces.
+- All 15 server-side admin POST handlers now check that the deployment is Vercel production on main before writing; all other environments are denied.
+- Live database schema, records, permissions and production branch are unchanged.
+- Remaining: isolated staging Supabase project and end-to-end browser testing before production deployment.

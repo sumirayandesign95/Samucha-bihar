@@ -5,6 +5,7 @@ import { timeAgoHindi } from "@/lib/format";
 import { Share2, Facebook, Twitter, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ArticleBody } from "@/components/site/ArticleBody";
+import { findDistrict } from "@/lib/bihar-districts";
 
 export const Route = createFileRoute("/article/$slug")({
   loader: async ({ params }) => {
@@ -67,6 +68,13 @@ function ArticlePage() {
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = encodeURIComponent(article.title);
   const enc = encodeURIComponent(shareUrl);
+  const districtSlug = article.tags?.find((tag: string) => tag.startsWith("जिला:"))?.slice(5);
+  const citySlug = article.tags?.find((tag: string) => tag.startsWith("शहर:"))?.slice(5);
+  const articleDistrict = findDistrict(districtSlug);
+  const articleCity = articleDistrict?.cities.find((town) => town.slug === citySlug);
+  const visibleTags = (article.tags ?? []).filter((tag: string) =>
+    !tag.startsWith("जिला:") && !tag.startsWith("शहर:")
+  );
 
   return (
     <>
@@ -146,11 +154,21 @@ function ArticlePage() {
         <ArticleBody content={article.content} />
       </div>
 
-      {article.tags && article.tags.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-2">
-          {article.tags.map((t: string) => (
-            <Link key={t} to="/tag/$tag" params={{ tag: t }} className="rounded-full bg-muted px-3 py-1 text-xs hover:bg-primary hover:text-primary-foreground">
-              #{t}
+      {(articleDistrict || visibleTags.length > 0) && (
+        <div className="mt-8 flex flex-wrap items-center gap-2">
+          {articleDistrict && (
+            <Link
+              to="/district/$slug"
+              params={{ slug: articleDistrict.slug }}
+              search={{ city: articleCity?.slug }}
+              className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              📍 {articleDistrict.name}{articleCity ? ` · ${articleCity.name}` : ""}
+            </Link>
+          )}
+          {visibleTags.map((tag: string) => (
+            <Link key={tag} to="/tag/$tag" params={{ tag }} className="rounded-full bg-muted px-3 py-1.5 text-xs hover:bg-primary hover:text-primary-foreground">
+              #{tag}
             </Link>
           ))}
         </div>
