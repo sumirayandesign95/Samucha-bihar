@@ -164,3 +164,10 @@
     to { transform: translateX(-50%); }
   }
 }
+
+/* Newsroom readability: accessible focus treatment and motion preferences. */
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}

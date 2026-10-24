@@ -89,6 +89,8 @@ export const getHomeBundle = createServerFn({ method: "GET" }).handler(async () 
         .from("breaking_news")
         .select("id,text,link")
         .eq("is_active", true)
+        // Do not show old ticker items as live breaking news.
+        .gte("created_at", new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
         .order("sort_order", { ascending: true })
         .limit(20),
       supabaseAdmin
