@@ -6,7 +6,8 @@ import { MapPin } from "lucide-react";
 import { BIHAR_DISTRICTS, findDistrict, isValidCity } from "@/lib/bihar-districts";
 import { listFeed } from "@/lib/news.functions";
 import { NewsCard, type Article } from "@/components/site/NewsCard";
-import { DistrictSelectorCard } from "@/components/site/DistrictSelector";
+import { DistrictSelectorCard, MobileDistrictPicker } from "@/components/site/DistrictSelector";
+import { absoluteSiteUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/district/$slug")({
   validateSearch: z.object({ city: z.string().max(64).optional() }),
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/district/$slug")({
       { title: `${loaderData.district.name} की खबरें — समूचा बिहार` },
       { name: "description", content: `${loaderData.district.name} जिले और आसपास के शहरों की हिंदी खबरें पढ़ें।` },
     ] : [],
+    links: loaderData ? [{ rel: "canonical", href: absoluteSiteUrl(`/district/${loaderData.district.slug}`) }] : [],
   }),
   component: DistrictNews,
   notFoundComponent: () => <div className="container mx-auto max-w-4xl px-4 py-16 text-center"><h1 className="font-display text-3xl font-bold">यह जिला या शहर उपलब्ध नहीं है</h1><Link to="/districts" className="mt-4 inline-block text-primary underline">सभी जिले देखें</Link></div>,
@@ -52,8 +54,9 @@ function DistrictNews() {
         <h1 className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">{selectedCity ? selectedCity.name : district.name} की खबरें</h1>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">{selectedCity ? `${district.name} जिले के ${selectedCity.name} शहर` : `${district.name} जिले`} से प्रकाशित खबरें एक जगह।</p>
       </div>
-      <DistrictSelectorCard />
-      <section className="mt-10">
+      <div className="md:hidden"><MobileDistrictPicker /></div>
+      <div className="hidden md:block"><DistrictSelectorCard /></div>
+      <section className="mt-8 sm:mt-10">
         <h2 className="mb-5 font-display text-2xl font-bold">स्थानीय समाचार</h2>
         {items.length ? (
           <>

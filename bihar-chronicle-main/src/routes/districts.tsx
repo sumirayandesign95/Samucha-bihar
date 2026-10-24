@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MapPin, ArrowRight } from "lucide-react";
 import { BIHAR_DISTRICTS } from "@/lib/bihar-districts";
+import { absoluteSiteUrl } from "@/lib/seo";
 import { DistrictSelectorCard } from "@/components/site/DistrictSelector";
 
 export const Route = createFileRoute("/districts")({
   head: () => ({ meta: [
     { title: "बिहार के 38 जिलों की खबरें — समूचा बिहार" },
     { name: "description", content: "बिहार के सभी 38 जिलों और प्रमुख शहरों की खबरें एक जगह पढ़ें।" },
-  ] }),
+  ], links: [{ rel: "canonical", href: absoluteSiteUrl("/districts") }] }),
   component: DistrictDirectory,
 });
 

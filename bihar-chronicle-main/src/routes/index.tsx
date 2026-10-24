@@ -7,6 +7,7 @@ import { DistrictSelectorCard, MobileDistrictPicker } from "@/components/site/Di
 import { NewsCard, type Article } from "@/components/site/NewsCard";
 import { timeAgoHindi } from "@/lib/format";
 import { getHomeBundle, listFeed } from "@/lib/news.functions";
+import { SITE_URL } from "@/lib/seo";
 
 const homeQuery = queryOptions({
   queryKey: ["home"],
@@ -15,6 +16,7 @@ const homeQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/")({
+  head: () => ({ links: [{ rel: "canonical", href: SITE_URL + "/" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(homeQuery),
   component: HomePage,
 });

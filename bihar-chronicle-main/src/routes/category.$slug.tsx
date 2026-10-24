@@ -3,6 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listFeed, listCategories } from "@/lib/news.functions";
 import { NewsCard, type Article } from "@/components/site/NewsCard";
+import { absoluteSiteUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/category/$slug")({
   loader: async ({ params, context }) => {
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/category/$slug")({
           { name: "description", content: `${loaderData.cat.name_hi} की ताज़ा हिन्दी ख़बरें।` },
         ]
       : [],
+    links: loaderData ? [{ rel: "canonical", href: absoluteSiteUrl(`/category/${encodeURIComponent(loaderData.cat.slug)}`) }] : [],
   }),
   component: CategoryPage,
   notFoundComponent: () => (

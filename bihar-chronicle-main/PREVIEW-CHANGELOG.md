@@ -77,3 +77,13 @@ Branch: `development/premium-hindi-newsroom`.
 - Removed the verbose tagline, secondary description and search shortcut from the narrow mobile first-screen only (search remains in the header menu).
 - Desktop retains its full district and city selector; district directory and admin functionality remain unchanged.
 - No live data, Supabase, or production deployment changes.
+
+## Crawl-ready news release (2026-10-24)
+- Added /robots.txt that blocks crawlers on Preview and advertises both sitemaps on Production.
+- Added dynamically generated /sitemap.xml for published articles, categories and active district editions.
+- Added /news-sitemap.xml with only the latest 48 hours and correct Hindi publisher info.
+- Added canonical URL tags to homepage, category, district directory, district page and news article.
+- NewsArticle JSON-LD uses actual stored author/published/modified fields, safely serialized.
+- Prioritized leading news images in browsers to improve mobile first story loading.
+- Mobile district pages now use collapsed district selection just like homepage.
+- No changes to production, database records or administration roles; search-console indexing is not claimed.
