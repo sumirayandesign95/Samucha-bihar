@@ -3,7 +3,7 @@ import { queryOptions, useInfiniteQuery, useSuspenseQuery } from "@tanstack/reac
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, Flame, Newspaper, TrendingUp } from "lucide-react";
 import { BreakingTicker } from "@/components/site/BreakingTicker";
-import { DistrictSelectorCard, MobileDistrictPicker } from "@/components/site/DistrictSelector";
+import { MobileDistrictPicker } from "@/components/site/DistrictSelector";
 import { NewsCard, type Article } from "@/components/site/NewsCard";
 import { timeAgoHindi } from "@/lib/format";
 import { getHomeBundle, listFeed } from "@/lib/news.functions";
@@ -63,15 +63,20 @@ function HomePage() {
             <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">बिहार की खबरें, आपकी नजर</h1>
             <p className="mt-1 hidden text-sm text-muted-foreground sm:block">बिहार, देश और दुनिया से समाचार और खास रिपोर्ट</p>
           </div>
-          <Link to="/search" search={{ q: "बिहार" }} className="hidden items-center gap-1 text-xs font-bold text-primary hover:underline sm:inline-flex">
-            और खबरें खोजें <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="hidden items-center gap-5 md:flex">
+            <Link to="/districts" className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+              अपने जिले की खबरें <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link to="/search" search={{ q: "बिहार" }} className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+              और खबरें खोजें <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
-        {/* Mobile: a single collapsed row leaves the first news story visible.
-            Desktop/tablet: retain the full district and city selector. */}
-        <div className="mb-5 md:hidden"><MobileDistrictPicker /></div>
-        <div className="mb-8 hidden md:block"><DistrictSelectorCard /></div>
+        {/* Location navigation is optional. News must be visible in the first viewport.
+            Desktop uses the existing "जिला / शहर चुनें" navigation link;
+            mobile retains only a one-line expandable picker. */}
+        <div className="mb-4 md:hidden"><MobileDistrictPicker /></div>
         {!hasContent ? (
           <EmptyState />
         ) : (

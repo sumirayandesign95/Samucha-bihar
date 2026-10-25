@@ -94,3 +94,10 @@ Branch: `development/premium-hindi-newsroom`.
 - Approve/reject operations only update articles still in review, avoiding accidental updates to already published content.
 - Media upload now shows error/status, validates file type/size, uses collision-resistant names and offers copy-link action.
 - User configured a production-only Vercel secret (presence verified; value never retrieved).
+
+## Desktop home-first news correction (reader feedback)
+- Removed the large district-city form from the homepage completely on desktop; news lead and side stories now start immediately after the compact section heading.
+- Kept one small 'अपने जिले की खबरें' link alongside desktop homepage actions and the existing prominent district navigation in the site header.
+- Kept the previously approved single-line mobile expandable picker.
+- Full district/city picker remains available at /districts and each district edition as needed.
+- No DB records, admin code, secrets or published articles changed.
