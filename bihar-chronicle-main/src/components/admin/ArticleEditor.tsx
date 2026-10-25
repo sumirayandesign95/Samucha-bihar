@@ -323,6 +323,16 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
 
   // District/city metadata is stored in the existing tags array, so Preview
   // needs no schema migrations. It is only saved when the editor saves the article.
+  const pictureValue = (prefix: string) => form.tags.find((tag) => tag.startsWith(prefix))?.slice(prefix.length) ?? "";
+  const changePictureValue = (prefix: string, value: string) => {
+    const withoutField = form.tags.filter((tag) => !tag.startsWith(prefix));
+    const nextTags = value ? [...withoutField, prefix + value] : withoutField;
+    if (nextTags.length > 15) {
+      toast.error("अधिकतम 15 टैग: कुछ सामान्य टैग हटाएँ।");
+      return;
+    }
+    update("tags", nextTags);
+  };
   const selectedDistrictSlug = form.tags.find((tag) => tag.startsWith("जिला:"))?.slice("जिला:".length) ?? "";
   const selectedCitySlug = form.tags.find((tag) => tag.startsWith("शहर:"))?.slice("शहर:".length) ?? "";
   const selectedDistrict = findDistrict(selectedDistrictSlug);
@@ -694,7 +704,7 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
                 <TagIcon className="h-3.5 w-3.5" /> टैग्स
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {form.tags.map((t) => (
+                {form.tags.filter(t => !t.startsWith("चित्र-विवरण:") && !t.startsWith("चित्र-स्रोत:") && !t.startsWith("चित्र-लिंक:")).map((t) => (
                   <span key={t} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">
                     #{t}
                     <button type="button" onClick={() => removeTag(t)} className="hover:text-destructive" aria-label="Remove tag"><X className="h-3 w-3" /></button>
@@ -750,6 +760,18 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
                   <ProgressBar pct={featuredUp.current.pct} err={featuredUp.current.err} />
                 </div>
               )}
+              <div className="mt-4 space-y-3 border-t border-border pt-4">
+                <Field label="फोटो कैप्शन (सांकेतिक हो तो जरूर लिखें)">
+                  <input className="ae-input" value={pictureValue("चित्र-विवरण:")} maxLength={80 - "चित्र-विवरण:".length} onChange={e => changePictureValue("चित्र-विवरण:", e.target.value)} placeholder="सांकेतिक तस्वीर: बारिश के बादल" />
+                </Field>
+                <Field label="तस्वीर स्रोत / फोटोग्राफर">
+                  <input className="ae-input" value={pictureValue("चित्र-स्रोत:")} maxLength={80 - "चित्र-स्रोत:".length} onChange={e => changePictureValue("चित्र-स्रोत:", e.target.value)} placeholder="फोटोग्राफर / संस्था / लाइसेंस" />
+                </Field>
+                <Field label="मूल फोटो या लाइसेंस का लिंक">
+                  <input className="ae-input" value={pictureValue("चित्र-लिंक:")} maxLength={80 - "चित्र-लिंक:".length} onChange={e => changePictureValue("चित्र-लिंक:", e.target.value)} placeholder="https://..." />
+                </Field>
+                <p className="text-xs leading-5 text-muted-foreground">तस्वीर का स्रोत खबर में दिखाई देगा। प्रकाशन से पहले फोटो अधिकार जाँच लें।</p>
+              </div>
             </SideCard>
 
             <SideCard title={`गैलरी (${form.gallery.length}/12)`}>
