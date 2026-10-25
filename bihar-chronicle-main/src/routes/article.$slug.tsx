@@ -200,7 +200,7 @@ function ArticlePage() {
             </figcaption>
           )}
         </figure>
-      )
+      )}
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3" aria-label="पढ़ने की सुविधा">
         <span className="text-sm font-bold">अपने हिसाब से टेक्स्ट पढ़ें</span>
