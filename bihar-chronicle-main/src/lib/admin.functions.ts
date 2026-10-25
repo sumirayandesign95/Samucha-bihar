@@ -180,6 +180,9 @@ export const upsertArticle = createServerFn({ method: "POST" })
     }
 
     const now = new Date().toISOString();
+    if (rest.status === "scheduled" && (!rest.published_at || Number.isNaN(Date.parse(rest.published_at)) || new Date(rest.published_at).getTime() <= Date.now())) {
+      throw new Error("खबर शेड्यूल करने के लिए भविष्य का सही समय चुनें।");
+    }
     const basePayload = {
       ...rest,
       image_url: rest.image_url || null,
@@ -261,7 +264,7 @@ export const adminUpsertAuthor = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     assertProductionWriteAccess();
-    await requireStaff(context.userId);
+    await requireEditor(context.userId);
     const { id, ...rest } = {
       ...data,
       avatar_url: data.avatar_url || null,
@@ -420,15 +423,19 @@ export const adminApproveArticle = createServerFn({ method: "POST" })
     assertProductionWriteAccess();
     await requireEditor(context.userId);
     const publishAt = data.publishAt && new Date(data.publishAt) > new Date() ? data.publishAt : null;
-    const { error } = await getAdminClient()
+    const { data: row, error } = await getAdminClient()
       .from("news_articles")
       .update({
         status: publishAt ? "scheduled" : "published",
         published_at: publishAt ?? new Date().toISOString(),
         rejection_note: null,
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("status", "review")
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!row) throw new Error("यह खबर समीक्षा कतार में नहीं है। सूची रीफ्रेश करें।");
     return { ok: true };
   });
 
@@ -440,11 +447,15 @@ export const adminRejectArticle = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     assertProductionWriteAccess();
     await requireEditor(context.userId);
-    const { error } = await getAdminClient()
+    const { data: row, error } = await getAdminClient()
       .from("news_articles")
       .update({ status: "draft", rejection_note: data.note })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("status", "review")
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!row) throw new Error("यह खबर समीक्षा कतार में नहीं है। सूची रीफ्रेश करें।");
     return { ok: true };
   });
 

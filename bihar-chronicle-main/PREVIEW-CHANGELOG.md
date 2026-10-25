@@ -87,3 +87,10 @@ Branch: `development/premium-hindi-newsroom`.
 - Prioritized leading news images in browsers to improve mobile first story loading.
 - Mobile district pages now use collapsed district selection just like homepage.
 - No changes to production, database records or administration roles; search-console indexing is not claimed.
+
+## Final prelaunch admin guards
+- Author create/update now requires editor privileges on the server, not just staff.
+- Scheduling requires a valid future publication date on the server.
+- Approve/reject operations only update articles still in review, avoiding accidental updates to already published content.
+- Media upload now shows error/status, validates file type/size, uses collision-resistant names and offers copy-link action.
+- User configured a production-only Vercel secret (presence verified; value never retrieved).
