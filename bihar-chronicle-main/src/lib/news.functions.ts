@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { districtTag, cityTag, findDistrict, isValidCity } from "@/lib/bihar-districts";
 
 const ARTICLE_COLS =
   "id, slug, title, subtitle, summary, image_url, tags, published_at, is_featured, is_trending, featured_rank, view_count, category:categories(slug,name_hi,name_en), author:authors(name,avatar_url)";
@@ -13,6 +14,8 @@ export const listFeed = createServerFn({ method: "GET" })
       .object({
         category: z.string().min(1).max(120).optional(),
         tag: z.string().min(1).max(80).optional(),
+        district: z.string().regex(/^[a-z-]+$/).max(64).optional(),
+        city: z.string().regex(/^[a-z-]+$/).max(64).optional(),
         author: z.string().min(1).max(160).optional(),
         cursor: z.string().datetime().nullable().optional(),
         limit: z.number().int().min(1).max(40).optional(),
@@ -21,6 +24,12 @@ export const listFeed = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const limit = data.limit ?? 12;
+    if (data.district) {
+      const district = findDistrict(data.district);
+      if (!district || !isValidCity(district, data.city)) return { items: [], nextCursor: null };
+    } else if (data.city) {
+      return { items: [], nextCursor: null };
+    }
     let categoryId: string | undefined;
     let authorId: string | undefined;
 
@@ -57,6 +66,8 @@ export const listFeed = createServerFn({ method: "GET" })
     if (categoryId) query = query.eq("category_id", categoryId);
     if (authorId) query = query.eq("author_id", authorId);
     if (data.tag) query = query.contains("tags", [data.tag]);
+    if (data.district) query = query.contains("tags", [districtTag(data.district)]);
+    if (data.city) query = query.contains("tags", [cityTag(data.city)]);
 
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
@@ -89,6 +100,8 @@ export const getHomeBundle = createServerFn({ method: "GET" }).handler(async () 
         .from("breaking_news")
         .select("id,text,link")
         .eq("is_active", true)
+        // Do not show old ticker items as live breaking news.
+        .gte("created_at", new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
         .order("sort_order", { ascending: true })
         .limit(20),
       supabaseAdmin
@@ -131,7 +144,7 @@ export const getArticle = createServerFn({ method: "GET" })
     const { data: article, error } = await supabaseAdmin
       .from("news_articles")
       .select(
-        "id,slug,title,subtitle,summary,content,image_url,tags,published_at,view_count,category:categories(slug,name_hi,name_en),author:authors(name,bio,avatar_url)",
+        "id,slug,title,subtitle,summary,seo_title,seo_description,content,image_url,tags,published_at,updated_at,view_count,category:categories(slug,name_hi,name_en),author:authors(name,bio,avatar_url)",
       )
       .eq("slug", data.slug)
       .eq("status", "published")
@@ -139,10 +152,8 @@ export const getArticle = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!article) return { article: null, related: [] };
 
-    await supabaseAdmin
-      .from("news_articles")
-      .update({ view_count: (article.view_count ?? 0) + 1 })
-      .eq("id", article.id);
+    // Preview browsing must never mutate published news records.
+    // View counting will be reintroduced through a separate, protected analytics path.
 
     let relatedQuery = supabaseAdmin
       .from("news_articles")

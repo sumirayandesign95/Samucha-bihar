@@ -6,11 +6,17 @@ export const STAFF: Role[] = ["super_admin", "admin", "editor", "reporter"];
 export const EDITOR_PLUS: Role[] = ["super_admin", "admin", "editor"];
 
 export function getAdminClient() {
+  // All privileged newsroom reads/writes require a server-only service key.
+  // Do not silently fall back to the publishable key: that fallback currently
+  // depends on insecure permissions and bypasses intended role isolation.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("सर्वर का सुरक्षित Supabase Admin Access कॉन्फ़िगर नहीं है।");
+  }
   return supabaseAdmin;
 }
 
 export async function getRoles(userId: string): Promise<Role[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getAdminClient()
     .from("user_roles")
     .select("role")
     .eq("user_id", userId);

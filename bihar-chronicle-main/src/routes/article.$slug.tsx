@@ -5,6 +5,8 @@ import { timeAgoHindi } from "@/lib/format";
 import { Share2, Facebook, Twitter, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ArticleBody } from "@/components/site/ArticleBody";
+import { findDistrict } from "@/lib/bihar-districts";
+import { absoluteSiteUrl, SITE_URL, safeJsonLd } from "@/lib/seo";
 
 export const Route = createFileRoute("/article/$slug")({
   loader: async ({ params }) => {
@@ -15,15 +17,38 @@ export const Route = createFileRoute("/article/$slug")({
   head: ({ loaderData }) => {
     if (!loaderData?.article) return { meta: [] };
     const a = loaderData.article;
+    const url = absoluteSiteUrl(`/article/${encodeURIComponent(a.slug)}`);
+    const title = a.seo_title || a.title;
+    const description = a.seo_description || a.summary || a.subtitle || a.title;
+    const structuredArticle = {
+      "@context": "https://schema.org",
+      "@type": "NewsArticle",
+      headline: a.title,
+      description,
+      url,
+      mainEntityOfPage: { "@type": "WebPage", "@id": url },
+      inLanguage: "hi",
+      ...(a.image_url ? { image: [a.image_url] } : {}),
+      ...(a.published_at ? { datePublished: a.published_at } : {}),
+      ...(a.updated_at ? { dateModified: a.updated_at } : {}),
+      ...(a.author?.name ? { author: [{ "@type": "Person", name: a.author.name }] } : {}),
+      ...(a.category?.name_hi ? { articleSection: a.category.name_hi } : {}),
+      publisher: { "@type": "Organization", name: "समूचा बिहार", url: SITE_URL },
+    };
     return {
       meta: [
-        { title: `${a.title} — समूचा बिहार` },
-        { name: "description", content: a.summary ?? a.subtitle ?? a.title },
-        { property: "og:title", content: a.title },
-        { property: "og:description", content: a.summary ?? "" },
-        ...(a.image_url ? [{ property: "og:image", content: a.image_url }] : []),
+        { title: `${title} — समूचा बिहार` },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
         { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        ...(a.image_url ? [{ property: "og:image", content: a.image_url }] : []),
+        ...(a.published_at ? [{ property: "article:published_time", content: a.published_at }] : []),
+        { name: "twitter:card", content: a.image_url ? "summary_large_image" : "summary" },
       ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{ type: "application/ld+json", children: safeJsonLd(structuredArticle) }],
     };
   },
   component: ArticlePage,
@@ -40,6 +65,7 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticlePage() {
   const { article: loadedArticle, related } = Route.useLoaderData();
   const [progress, setProgress] = useState(0);
+  const [readerFontSize, setReaderFontSize] = useState(20);
   useEffect(() => {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -52,10 +78,27 @@ function ArticlePage() {
 
   if (!loadedArticle) return null;
   const article = loadedArticle;
+  // Reading time is an estimate for the article body, not a guarantee.
+  const textOnly = article.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  const readingMinutes = Math.max(1, Math.ceil((textOnly ? textOnly.split(" ").length : 0) / 180));
+  const absoluteDate = article.published_at
+    ? new Intl.DateTimeFormat("hi-IN", {
+        timeZone: "Asia/Kolkata",
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(article.published_at))
+    : null;
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const shareText = encodeURIComponent(article.title);
   const enc = encodeURIComponent(shareUrl);
+  const districtSlug = article.tags?.find((tag: string) => tag.startsWith("जिला:"))?.slice(5);
+  const citySlug = article.tags?.find((tag: string) => tag.startsWith("शहर:"))?.slice(5);
+  const articleDistrict = findDistrict(districtSlug);
+  const articleCity = articleDistrict?.cities.find((town) => town.slug === citySlug);
+  const visibleTags = (article.tags ?? []).filter((tag: string) =>
+    !tag.startsWith("जिला:") && !tag.startsWith("शहर:")
+  );
 
   return (
     <>
@@ -98,6 +141,8 @@ function ArticlePage() {
           </span>
         )}
         <span>{timeAgoHindi(article.published_at)}</span>
+        {absoluteDate && <time dateTime={article.published_at ?? undefined}>{absoluteDate}</time>}
+        <span>{readingMinutes} मिनट की पढ़ाई</span>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs flex items-center gap-1"><Share2 className="h-3 w-3" /> शेयर:</span>
           <a target="_blank" rel="noopener" href={`https://wa.me/?text=${shareText}%20${enc}`} className="rounded-md border border-border p-1.5 hover:bg-muted" aria-label="WhatsApp">
@@ -117,16 +162,40 @@ function ArticlePage() {
           src={article.image_url}
           alt={article.title}
           className="mt-6 w-full rounded-xl object-cover aspect-[16/9]"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
         />
       )}
 
-      <ArticleBody content={article.content} />
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3" aria-label="पढ़ने की सुविधा">
+        <span className="text-sm font-bold">अपने हिसाब से टेक्स्ट पढ़ें</span>
+        <div className="flex items-center gap-1">
+          <button type="button" disabled={readerFontSize <= 18} aria-label="अक्षर छोटे करें" onClick={() => setReaderFontSize((size) => Math.max(18, size - 2))} className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold disabled:opacity-40">अ−</button>
+          <span className="min-w-12 text-center text-xs text-muted-foreground" aria-live="polite">{readerFontSize}px</span>
+          <button type="button" disabled={readerFontSize >= 24} aria-label="अक्षर बड़े करें" onClick={() => setReaderFontSize((size) => Math.min(24, size + 2))} className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-semibold disabled:opacity-40">अ+</button>
+        </div>
+      </div>
 
-      {article.tags && article.tags.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-2">
-          {article.tags.map((t: string) => (
-            <Link key={t} to="/tag/$tag" params={{ tag: t }} className="rounded-full bg-muted px-3 py-1 text-xs hover:bg-primary hover:text-primary-foreground">
-              #{t}
+      <div style={{ fontSize: `${readerFontSize}px` }}>
+        <ArticleBody content={article.content} />
+      </div>
+
+      {(articleDistrict || visibleTags.length > 0) && (
+        <div className="mt-8 flex flex-wrap items-center gap-2">
+          {articleDistrict && (
+            <Link
+              to="/district/$slug"
+              params={{ slug: articleDistrict.slug }}
+              search={{ city: articleCity?.slug }}
+              className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              📍 {articleDistrict.name}{articleCity ? ` · ${articleCity.name}` : ""}
+            </Link>
+          )}
+          {visibleTags.map((tag: string) => (
+            <Link key={tag} to="/tag/$tag" params={{ tag }} className="rounded-full bg-muted px-3 py-1.5 text-xs hover:bg-primary hover:text-primary-foreground">
+              #{tag}
             </Link>
           ))}
         </div>

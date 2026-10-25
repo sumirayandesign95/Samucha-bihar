@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -18,6 +19,7 @@ import {
   checkAdmin,
 } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { BIHAR_DISTRICTS, districtTag, cityTag, findDistrict } from "@/lib/bihar-districts";
 
 // ---------------- helpers ----------------
 
@@ -222,7 +224,7 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
       setRejectionNote(a.rejection_note ?? null);
       queueMicrotask(() => {
         if (editorRef.current && editorRef.current.innerHTML.trim() === "") {
-          editorRef.current.innerHTML = a.content ?? "";
+          editorRef.current.innerHTML = DOMPurify.sanitize(a.content ?? "");
         }
       });
       setDirty(false);
@@ -317,6 +319,26 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
   const removeTag = (t: string) => {
     setForm((f) => ({ ...f, tags: f.tags.filter((x) => x !== t) }));
     setDirty(true);
+  };
+
+  // District/city metadata is stored in the existing tags array, so Preview
+  // needs no schema migrations. It is only saved when the editor saves the article.
+  const selectedDistrictSlug = form.tags.find((tag) => tag.startsWith("जिला:"))?.slice("जिला:".length) ?? "";
+  const selectedCitySlug = form.tags.find((tag) => tag.startsWith("शहर:"))?.slice("शहर:".length) ?? "";
+  const selectedDistrict = findDistrict(selectedDistrictSlug);
+
+  const chooseLocation = (districtSlug: string, citySlug = "") => {
+    const district = findDistrict(districtSlug);
+    const safeCity = district?.cities.some((city) => city.slug === citySlug) ? citySlug : "";
+    const kept = form.tags.filter((tag) => !tag.startsWith("जिला:") && !tag.startsWith("शहर:"));
+    const nextTags = district
+      ? [...kept, districtTag(district.slug), ...(safeCity ? [cityTag(safeCity)] : [])]
+      : kept;
+    if (nextTags.length > 15) {
+      toast.error("जिला जोड़ने के लिए कुछ अन्य टैग हटाएँ (अधिकतम 15 टैग)");
+      return;
+    }
+    update("tags", nextTags);
   };
 
   const validate = (forPublish: boolean): string | null => {
@@ -634,6 +656,40 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
             </div>
 
             <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <h3 className="mb-3 text-sm font-bold text-foreground">स्थानीय खबर का स्थान</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="जिला (यदि खबर स्थानीय है)">
+                  <select
+                    className="ae-input"
+                    value={selectedDistrictSlug}
+                    onChange={(e) => chooseLocation(e.target.value)}
+                  >
+                    <option value="">— सभी बिहार / कोई जिला नहीं —</option>
+                    {BIHAR_DISTRICTS.map((district) => (
+                      <option key={district.slug} value={district.slug}>{district.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="शहर / क्षेत्र (वैकल्पिक)">
+                  <select
+                    className="ae-input"
+                    disabled={!selectedDistrict}
+                    value={selectedCitySlug}
+                    onChange={(e) => chooseLocation(selectedDistrictSlug, e.target.value)}
+                  >
+                    <option value="">— पूरा जिला —</option>
+                    {selectedDistrict?.cities.map((city) => (
+                      <option key={city.slug} value={city.slug}>{city.name}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              <p className="mt-2 text-xs leading-6 text-muted-foreground">
+                खबर सेव करने पर जिला/शहर की पहचान टैग के रूप में जुड़ेगी और संबंधित स्थानीय पेज पर खबर दिखाई देगी।
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <TagIcon className="h-3.5 w-3.5" /> टैग्स
               </div>
@@ -823,7 +879,7 @@ export function ArticleEditor({ id: initialId }: { id?: string }) {
               <button onClick={() => setPreview(false)} className="rounded-md border border-border p-1.5 hover:bg-muted"><X className="h-4 w-4" /></button>
             </div>
             {form.image_url && <img src={form.image_url} alt="" className="mt-4 aspect-video w-full rounded-lg object-cover" />}
-            <div className="prose prose-lg dark:prose-invert mt-5 max-w-none" dangerouslySetInnerHTML={{ __html: form.content }} />
+            <div className="prose prose-lg dark:prose-invert mt-5 max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.content) }} />
           </div>
         </div>
       )}

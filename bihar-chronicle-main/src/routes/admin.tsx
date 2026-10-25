@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tan
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { checkAdmin } from "@/lib/admin.functions";
+import { checkAdmin, getPreviewStatus } from "@/lib/admin.functions";
 import { LayoutDashboard, FileText, Megaphone, LogOut, Plus, FolderTree, Tags, Users, Image, ClipboardCheck, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -12,14 +12,25 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   const navigate = useNavigate();
-  const [state, setState] = useState<"loading" | "anon" | "not-admin" | "admin">("loading");
+  const [state, setState] = useState<"loading" | "preview" | "anon" | "not-admin" | "admin">("loading");
   const [role, setRole] = useState<string | null>(null);
   const [canManageUsers, setCanManageUsers] = useState(false);
+  const [canPublish, setCanPublish] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const checkFn = useServerFn(checkAdmin);
+  const previewFn = useServerFn(getPreviewStatus);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const verify = async () => {
+    // Stop before any editor or storage-upload component can render in Preview.
+    try {
+      const mode = await previewFn();
+      if (mode.readOnly) { setState("preview"); return; }
+    } catch {
+      // Fail closed if the environment-safety check cannot be completed.
+      setState("preview");
+      return;
+    }
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) {
       setState("anon");
@@ -32,6 +43,7 @@ function AdminLayout() {
       setState(res.isAdmin ? "admin" : "not-admin");
       setRole(res.role ?? null);
       setCanManageUsers(!!res.canManageUsers);
+      setCanPublish(!!res.canPublish);
     } catch {
       setState("not-admin");
     }
@@ -51,6 +63,32 @@ function AdminLayout() {
 
   if (state === "loading" || state === "anon") {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">लोड हो रहा है...</div>;
+  }
+
+  if (state === "preview") {
+    return (
+      <main className="container mx-auto flex min-h-[70vh] max-w-2xl items-center px-4 py-16">
+        <div className="w-full rounded-2xl border border-primary/20 bg-card p-7 text-center shadow-sm sm:p-10">
+          <span className="inline-flex rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary">
+            सुरक्षित प्रीव्यू · केवल पढ़ने के लिए
+          </span>
+          <h1 className="mt-5 font-display text-2xl font-extrabold sm:text-3xl">एडमिन बदलाव अभी बंद हैं</h1>
+          <p className="mt-4 text-sm leading-8 text-muted-foreground">
+            इस टेस्ट वेबसाइट को मौजूदा लाइव समाचार डेटाबेस से पढ़ने की सुविधा दी गई है।
+            पुराने लेख, फोटो और एडमिन रिकॉर्ड सुरक्षित रखने के लिए इस Preview में
+            सेव, पब्लिश, डिलीट और मीडिया अपलोड उपलब्ध नहीं हैं।
+          </p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link to="/" className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground">
+              नया होमपेज देखें
+            </Link>
+            <Link to="/districts" className="rounded-lg border border-border px-5 py-3 text-sm font-bold hover:border-primary">
+              अपने जिले की खबरें
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (state === "not-admin") {
@@ -93,14 +131,16 @@ function AdminLayout() {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           <SideLink to="/admin" exact icon={<LayoutDashboard className="h-4 w-4" />} label="डैशबोर्ड" pathname={pathname} />
           <SideLink to="/admin/articles" icon={<FileText className="h-4 w-4" />} label="ख़बरें" pathname={pathname} />
-          <SideLink to="/admin/review" icon={<ClipboardCheck className="h-4 w-4" />} label="Review Queue" pathname={pathname} />
-          <SideLink to="/admin/categories" icon={<FolderTree className="h-4 w-4" />} label="Categories" pathname={pathname} />
-          <SideLink to="/admin/tags" icon={<Tags className="h-4 w-4" />} label="Tags" pathname={pathname} />
-          <SideLink to="/admin/authors" icon={<Users className="h-4 w-4" />} label="Authors" pathname={pathname} />
-          <SideLink to="/admin/media" icon={<Image className="h-4 w-4" />} label="Media" pathname={pathname} />
-          <SideLink to="/admin/breaking" icon={<Megaphone className="h-4 w-4" />} label="ब्रेकिंग न्यूज़" pathname={pathname} />
+          {canPublish && <>
+            <SideLink to="/admin/review" icon={<ClipboardCheck className="h-4 w-4" />} label="समीक्षा के लिए खबरें" pathname={pathname} />
+            <SideLink to="/admin/categories" icon={<FolderTree className="h-4 w-4" />} label="श्रेणियाँ" pathname={pathname} />
+            <SideLink to="/admin/tags" icon={<Tags className="h-4 w-4" />} label="टैग" pathname={pathname} />
+            <SideLink to="/admin/authors" icon={<Users className="h-4 w-4" />} label="लेखक" pathname={pathname} />
+          </>}
+          <SideLink to="/admin/media" icon={<Image className="h-4 w-4" />} label="मीडिया लाइब्रेरी" pathname={pathname} />
+          {canPublish && <SideLink to="/admin/breaking" icon={<Megaphone className="h-4 w-4" />} label="ब्रेकिंग न्यूज़" pathname={pathname} />}
           {canManageUsers && (
-            <SideLink to="/admin/users" icon={<ShieldCheck className="h-4 w-4" />} label="Users & Roles" pathname={pathname} />
+            <SideLink to="/admin/users" icon={<ShieldCheck className="h-4 w-4" />} label="यूज़र और भूमिकाएँ" pathname={pathname} />
           )}
           <Link
             to="/admin/articles/new"
@@ -112,7 +152,7 @@ function AdminLayout() {
         <div className="m-3 space-y-2">
           {role && (
             <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-              Signed in as <span className="text-foreground font-semibold">{role.replace("_", " ")}</span>
+              लॉगिन भूमिका: <span className="text-foreground font-semibold">{role.replace("_", " ")}</span>
             </div>
           )}
           <button onClick={signOut} className="flex w-full items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">
@@ -124,13 +164,15 @@ function AdminLayout() {
         <header className="md:hidden border-b border-border bg-card px-4 py-3 flex items-center gap-3 overflow-x-auto">
           <Link to="/admin" className="text-sm font-semibold">डैशबोर्ड</Link>
           <Link to="/admin/articles" className="text-sm">ख़बरें</Link>
-          <Link to="/admin/review" className="text-sm">Review</Link>
-          <Link to="/admin/categories" className="text-sm">Categories</Link>
-          <Link to="/admin/tags" className="text-sm">Tags</Link>
-          <Link to="/admin/authors" className="text-sm">Authors</Link>
-          <Link to="/admin/media" className="text-sm">Media</Link>
-          <Link to="/admin/breaking" className="text-sm">ब्रेकिंग</Link>
-          {canManageUsers && <Link to="/admin/users" className="text-sm">Users</Link>}
+          {canPublish && <>
+            <Link to="/admin/review" className="text-sm">समीक्षा</Link>
+            <Link to="/admin/categories" className="text-sm">श्रेणियाँ</Link>
+            <Link to="/admin/tags" className="text-sm">टैग</Link>
+            <Link to="/admin/authors" className="text-sm">लेखक</Link>
+          </>}
+          <Link to="/admin/media" className="text-sm">मीडिया लाइब्रेरी</Link>
+          {canPublish && <Link to="/admin/breaking" className="text-sm">ब्रेकिंग</Link>}
+          {canManageUsers && <Link to="/admin/users" className="text-sm">यूज़र</Link>}
           <Link to="/admin/articles/new" className="text-sm text-primary">+ नई</Link>
           <button onClick={signOut} className="ml-auto text-sm">साइन आउट</button>
         </header>

@@ -47,7 +47,9 @@ export function NewsCard({ article, variant = "feed" }: { article: Article; vari
               src={article.image_url}
               alt={article.title}
               className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
           ) : (
             <PlaceholderImg />

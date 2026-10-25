@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { queryOptions, useInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getHomeBundle, listFeed } from "@/lib/news.functions";
+import { ArrowRight, Flame, Newspaper, TrendingUp } from "lucide-react";
 import { BreakingTicker } from "@/components/site/BreakingTicker";
+import { DistrictSelectorCard, MobileDistrictPicker } from "@/components/site/DistrictSelector";
 import { NewsCard, type Article } from "@/components/site/NewsCard";
-import { TrendingUp, Flame, Award, Newspaper } from "lucide-react";
+import { timeAgoHindi } from "@/lib/format";
+import { getHomeBundle, listFeed } from "@/lib/news.functions";
+import { SITE_URL } from "@/lib/seo";
 
 const homeQuery = queryOptions({
   queryKey: ["home"],
@@ -13,6 +16,7 @@ const homeQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/")({
+  head: () => ({ links: [{ rel: "canonical", href: SITE_URL + "/" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(homeQuery),
   component: HomePage,
 });
@@ -20,127 +24,165 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const { data: home } = useSuspenseQuery(homeQuery);
   const feedFn = useServerFn(listFeed);
-
   const feed = useInfiniteQuery({
     queryKey: ["feed"],
     queryFn: ({ pageParam }) => feedFn({ data: { cursor: pageParam as string | null, limit: 10 } }),
     initialPageParam: home.nextCursor,
-    getNextPageParam: (last) => last.nextCursor,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialData: {
       pages: [{ items: home.latest as Article[], nextCursor: home.nextCursor }],
       pageParams: [null],
     },
   });
 
-  const feedItems = feed.data?.pages.flatMap((p) => p.items as Article[]) ?? [];
-  const hero = home.featured[0] as Article | undefined;
-  const secondaryFeatured = home.featured.slice(1, 5) as Article[];
-  const editorsPick = ((home as any).editorsPick ?? []) as Article[];
-
-  const hasContent =
-    home.featured.length + home.trending.length + home.latest.length > 0;
+  const featured = home.featured as Article[];
+  const latest = home.latest as Article[];
+  const trending = home.trending as Article[];
+  const mostRead = (home.editorsPick ?? []) as Article[];
+  // The homepage must still have a lead story when no article was marked "featured".
+  const lead = featured[0] ?? latest[0] ?? trending[0];
+  const seen = new Set(lead ? [lead.id] : []);
+  const sideStories: Article[] = [];
+  for (const article of [...featured.slice(1), ...latest]) {
+    if (seen.has(article.id)) continue;
+    seen.add(article.id);
+    sideStories.push(article);
+    if (sideStories.length === 3) break;
+  }
+  const feedItems = feed.data?.pages.flatMap((page) => page.items as Article[]) ?? [];
+  const uniqueFeed = feedItems.filter((item) => !seen.has(item.id));
+  const hasContent = featured.length + trending.length + latest.length > 0;
 
   return (
     <div>
       <BreakingTicker items={home.breaking} />
-      <div className="container mx-auto max-w-7xl px-4 py-6 sm:py-8">
+      <div className="container mx-auto max-w-7xl px-4 pb-16 pt-4 sm:pt-9">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border pb-3 sm:mb-6 sm:pb-5">
+          <div>
+            <p className="mb-1 hidden text-[11px] font-bold uppercase tracking-[0.18em] text-primary sm:block">SAMUCHA BIHAR · NEWS DESK</p>
+            <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">बिहार की खबरें, आपकी नजर</h1>
+            <p className="mt-1 hidden text-sm text-muted-foreground sm:block">बिहार, देश और दुनिया से समाचार और खास रिपोर्ट</p>
+          </div>
+          <Link to="/search" search={{ q: "बिहार" }} className="hidden items-center gap-1 text-xs font-bold text-primary hover:underline sm:inline-flex">
+            और खबरें खोजें <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {/* Mobile: a single collapsed row leaves the first news story visible.
+            Desktop/tablet: retain the full district and city selector. */}
+        <div className="mb-5 md:hidden"><MobileDistrictPicker /></div>
+        <div className="mb-8 hidden md:block"><DistrictSelectorCard /></div>
         {!hasContent ? (
           <EmptyState />
         ) : (
           <>
-            {/* Featured hero grid */}
-            {hero && (
-              <section className="grid gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                  <NewsCard article={hero} variant="featured" />
-                </div>
-                <div className="grid gap-4">
-                  {secondaryFeatured.slice(0, 2).map((a) => (
-                    <NewsCard key={a.id} article={a} variant="featured" />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Trending strip */}
-            {home.trending.length > 0 && (
-              <section className="mt-10">
-                <SectionHeader icon={<Flame className="h-4 w-4" />} title="ट्रेंडिंग ख़बरें" />
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {(home.trending as Article[]).map((a) => (
-                    <NewsCard key={a.id} article={a} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Editor's Pick */}
-            {editorsPick.length > 0 && (
-              <section className="mt-10 rounded-2xl bg-gradient-to-br from-primary/5 via-card to-accent/5 border border-border p-5 sm:p-7">
-                <SectionHeader icon={<Award className="h-4 w-4" />} title="संपादक की पसंद" />
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  {editorsPick.slice(0, 4).map((a) => (
-                    <NewsCard key={a.id} article={a} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Main feed + sidebar */}
-            <section className="mt-10 grid gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2">
-                <SectionHeader icon={<Newspaper className="h-4 w-4" />} title="ताज़ा अपडेट" />
-                <div className="grid gap-5 sm:grid-cols-2">
-                  {feedItems.map((a) => (
-                    <NewsCard key={a.id} article={a} />
-                  ))}
-                </div>
-                <div className="mt-8 flex justify-center">
-                  {feed.hasNextPage ? (
-                    <button
-                      onClick={() => feed.fetchNextPage()}
-                      disabled={feed.isFetchingNextPage}
-                      className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50"
-                    >
-                      {feed.isFetchingNextPage ? "लोड हो रहा है..." : "और ख़बरें दिखाएँ"}
-                    </button>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">— यहाँ तक की सभी ख़बरें —</p>
-                  )}
-                </div>
-              </div>
-
-              <aside className="space-y-8">
-                <div className="rounded-xl border border-border bg-card p-5">
-                  <h3 className="font-display text-lg font-bold mb-2 border-l-4 border-primary pl-3">
-                    श्रेणियाँ
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {home.categories.map((c) => (
-                      <Link
-                        key={c.slug}
-                        to="/category/$slug"
-                        params={{ slug: c.slug }}
-                        className="text-xs rounded-full border border-border px-3 py-1.5 hover:bg-primary hover:text-primary-foreground hover:border-primary transition"
-                      >
-                        {c.name_hi}
-                      </Link>
-                    ))}
+            {lead && (
+              <section aria-label="मुख्य समाचार" className="grid gap-5 lg:grid-cols-12">
+                <div className="lg:col-span-7 xl:col-span-8">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="h-6 w-1 rounded-full bg-primary" />
+                    <h2 className="font-display text-xl font-bold">मुख्य समाचार</h2>
+                  </div>
+                  <div className="overflow-hidden rounded-xl [&>a]:h-full [&>a>div:first-child]:lg:aspect-[16/10]">
+                    <NewsCard article={lead} variant="featured" />
                   </div>
                 </div>
-
-                {home.trending.length > 0 && (
-                  <div className="rounded-xl border border-border bg-card p-5">
-                    <h3 className="font-display text-lg font-bold mb-2 border-l-4 border-primary pl-3">
-                      सबसे ज़्यादा पढ़ी गई
-                    </h3>
-                    <div>
-                      {(home.trending as Article[]).slice(0, 5).map((a) => (
-                        <NewsCard key={a.id} article={a} variant="compact" />
+                {sideStories.length > 0 && (
+                  <div className="lg:col-span-5 xl:col-span-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="h-6 w-1 rounded-full bg-primary" />
+                      <h2 className="font-display text-xl font-bold">अन्य बड़ी खबरें</h2>
+                    </div>
+                    <div className="divide-y divide-border rounded-xl border border-border bg-card px-4">
+                      {sideStories.map((article) => (
+                        <SideStory key={article.id} article={article} />
                       ))}
                     </div>
                   </div>
                 )}
+              </section>
+            )}
+
+            {home.categories.length > 0 && (
+              <section aria-label="समाचार की श्रेणियां" className="mt-9 rounded-xl border border-border bg-muted/30 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="mr-2 shrink-0 text-sm font-bold">अपनी रुचि की खबरें</span>
+                  {home.categories.map((category) => (
+                    <Link
+                      key={category.slug}
+                      to="/category/$slug"
+                      params={{ slug: category.slug }}
+                      className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-bold transition hover:border-primary hover:bg-primary hover:text-white"
+                    >
+                      {category.name_hi}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {trending.length > 0 && (
+              <section className="mt-12">
+                <SectionTitle title="चर्चा में खबरें" kicker="TRENDING" icon={<Flame className="h-5 w-5" />} />
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {trending.slice(0, 3).map((article) => (
+                    <NewsCard key={article.id} article={article} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="mt-12 grid gap-9 lg:grid-cols-12">
+              <div className="lg:col-span-8">
+                <SectionTitle title="नई प्रकाशित खबरें" kicker="LATEST STORIES" icon={<Newspaper className="h-5 w-5" />} />
+                {uniqueFeed.length > 0 ? (
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    {uniqueFeed.map((article) => (
+                      <NewsCard key={article.id} article={article} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">बाकी सभी उपलब्ध खबरें ऊपर दिखाई गई हैं।</p>
+                )}
+                <div className="mt-7 flex justify-center">
+                  {feed.hasNextPage ? (
+                    <button
+                      type="button"
+                      onClick={() => feed.fetchNextPage()}
+                      disabled={feed.isFetchingNextPage}
+                      className="rounded-full border border-border bg-card px-6 py-2.5 text-sm font-bold hover:border-primary hover:text-primary disabled:opacity-60"
+                    >
+                      {feed.isFetchingNextPage ? "खबरें खुल रही हैं..." : "और खबरें पढ़ें"}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">सभी उपलब्ध खबरें देख ली गई हैं।</p>
+                  )}
+                </div>
+              </div>
+
+              <aside className="lg:col-span-4">
+                {mostRead.length > 0 && (
+                  <div className="rounded-xl border border-border bg-card p-5">
+                    <div className="mb-3 flex items-center gap-2 border-b border-border pb-4">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <h2 className="font-display text-xl font-extrabold">सबसे ज्यादा पढ़ी गई</h2>
+                    </div>
+                    {mostRead.slice(0, 4).map((article, index) => (
+                      <Link key={article.id} to="/article/$slug" params={{ slug: article.slug }} className="group flex gap-4 border-b border-border py-4 last:border-0">
+                        <span className="font-display text-3xl font-black text-primary/30">{String(index + 1).padStart(2, "0")}</span>
+                        <span className="text-sm font-bold leading-7 group-hover:text-primary">{article.title}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-6 rounded-xl bg-[#171b22] p-6 text-white">
+                  <span className="text-[11px] font-bold tracking-widest text-white/60">समूचा बिहार</span>
+                  <h2 className="mt-2 font-display text-xl font-extrabold leading-relaxed">आपके इलाके की खबर, आपकी भाषा में</h2>
+                  <p className="mt-3 text-sm leading-7 text-white/65">बिहार की स्थानीय खबरों से लेकर देश और दुनिया की महत्वपूर्ण जानकारी तक।</p>
+                  <Link to="/about" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-white underline underline-offset-4">
+                    हमारे बारे में जानें <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </aside>
             </section>
           </>
@@ -150,32 +192,45 @@ function HomePage() {
   );
 }
 
-function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+function SideStory({ article }: { article: Article }) {
   return (
-    <div className="mb-5 flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-        {icon}
-      </span>
-      <h2 className="font-display text-xl sm:text-2xl font-bold">{title}</h2>
-      <span className="ml-2 h-px flex-1 bg-border" />
+    <Link to="/article/$slug" params={{ slug: article.slug }} className="group flex items-start gap-4 py-4">
+      <div className="aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-lg bg-muted sm:w-32">
+        {article.image_url ? (
+          <img src={article.image_url} alt={article.title} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+        ) : (
+          <div className="flex h-full items-center justify-center px-2 text-center text-xs font-bold text-primary/60">समूचा बिहार</div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <span className="text-[11px] font-bold text-primary">{article.category?.name_hi ?? "समाचार"}</span>
+        <h3 className="mt-1 line-clamp-3 font-display text-sm font-bold leading-7 group-hover:text-primary sm:text-base">{article.title}</h3>
+        <p className="mt-1 text-[11px] text-muted-foreground">{timeAgoHindi(article.published_at)}</p>
+      </div>
+    </Link>
+  );
+}
+
+function SectionTitle({ title, kicker, icon }: { title: string; kicker: string; icon: React.ReactNode }) {
+  return (
+    <div className="mb-5 flex items-center justify-between gap-3 border-b border-border pb-3">
+      <div>
+        <span className="text-[10px] font-bold tracking-[0.16em] text-primary">{kicker}</span>
+        <h2 className="mt-1 flex items-center gap-2 font-display text-xl font-extrabold sm:text-2xl">
+          <span aria-hidden="true" className="text-primary">{icon}</span>{title}
+        </h2>
+      </div>
+      <span className="h-1 w-10 shrink-0 rounded-full bg-primary" />
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-card p-12 text-center">
-      <h2 className="font-display text-2xl font-bold">अभी कोई ख़बर प्रकाशित नहीं है</h2>
-      <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-        एडमिन पैनल में लॉगिन करके पहली ख़बर प्रकाशित करें। प्रकाशित ख़बरें यहाँ
-        स्वचालित रूप से दिखाई देंगी।
-      </p>
-      <Link
-        to="/login"
-        className="mt-5 inline-flex rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-      >
-        एडमिन लॉगिन
-      </Link>
+    <div className="rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+      <h2 className="font-display text-2xl font-bold">अभी कोई खबर उपलब्ध नहीं है</h2>
+      <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">नई खबरें प्रकाशित होने पर इस पेज पर दिखाई देंगी। आप बाद में फिर देख सकते हैं।</p>
+      <Link to="/about" className="mt-5 inline-flex text-sm font-bold text-primary hover:underline">समूचा बिहार के बारे में जानें</Link>
     </div>
   );
 }
