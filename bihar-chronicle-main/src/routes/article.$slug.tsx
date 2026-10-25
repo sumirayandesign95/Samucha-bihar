@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getArticle } from "@/lib/news.functions";
 import { NewsCard, type Article } from "@/components/site/NewsCard";
 import { timeAgoHindi } from "@/lib/format";
-import { Share2, Facebook, Twitter, MessageCircle } from "lucide-react";
+import { Share2, Facebook, Twitter, MessageCircle, Send, Copy, Instagram, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ArticleBody } from "@/components/site/ArticleBody";
 import { findDistrict } from "@/lib/bihar-districts";
@@ -66,6 +66,7 @@ function ArticlePage() {
   const { article: loadedArticle, related } = Route.useLoaderData();
   const [progress, setProgress] = useState(0);
   const [readerFontSize, setReaderFontSize] = useState(20);
+  const [shareNotice, setShareNotice] = useState("");
   useEffect(() => {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -89,15 +90,44 @@ function ArticlePage() {
       }).format(new Date(article.published_at))
     : null;
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareUrl = absoluteSiteUrl(`/article/${encodeURIComponent(article.slug)}`);
   const shareText = encodeURIComponent(article.title);
   const enc = encodeURIComponent(shareUrl);
+  const photoValue = (prefix: string) => article.tags?.find((tag: string) => tag.startsWith(prefix))?.slice(prefix.length).trim() ?? "";
+  const photoCaption = photoValue("चित्र-विवरण:");
+  const photoCredit = photoValue("चित्र-स्रोत:");
+  const creditUrl = photoValue("चित्र-लिंक:");
+  const creditHref = creditUrl.startsWith("https://") ? creditUrl : "";
+
+  async function copyArticleLink(forInstagram = false) {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareNotice(forInstagram
+        ? "लिंक कॉपी हो गया। Instagram Story के Link Sticker में पेस्ट करें।"
+        : "खबर का लिंक कॉपी हो गया।");
+    } catch {
+      setShareNotice("कॉपी नहीं हो सकी। ब्राउज़र से लिंक शेयर करें।");
+    }
+  }
+  async function shareForInstagram() {
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: article.title, url: shareUrl });
+        setShareNotice("मोबाइल शेयर विकल्प खुल गया। Instagram उपलब्ध हो तो चुनें।");
+        return;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+      }
+    }
+    await copyArticleLink(true);
+  }
   const districtSlug = article.tags?.find((tag: string) => tag.startsWith("जिला:"))?.slice(5);
   const citySlug = article.tags?.find((tag: string) => tag.startsWith("शहर:"))?.slice(5);
   const articleDistrict = findDistrict(districtSlug);
   const articleCity = articleDistrict?.cities.find((town) => town.slug === citySlug);
   const visibleTags = (article.tags ?? []).filter((tag: string) =>
     !tag.startsWith("जिला:") && !tag.startsWith("शहर:")
+    && !tag.startsWith("चित्र-विवरण:") && !tag.startsWith("चित्र-स्रोत:") && !tag.startsWith("चित्र-लिंक:")
   );
 
   return (
@@ -143,30 +173,34 @@ function ArticlePage() {
         <span>{timeAgoHindi(article.published_at)}</span>
         {absoluteDate && <time dateTime={article.published_at ?? undefined}>{absoluteDate}</time>}
         <span>{readingMinutes} मिनट की पढ़ाई</span>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs flex items-center gap-1"><Share2 className="h-3 w-3" /> शेयर:</span>
-          <a target="_blank" rel="noopener" href={`https://wa.me/?text=${shareText}%20${enc}`} className="rounded-md border border-border p-1.5 hover:bg-muted" aria-label="WhatsApp">
-            <MessageCircle className="h-4 w-4" />
-          </a>
-          <a target="_blank" rel="noopener" href={`https://twitter.com/intent/tweet?text=${shareText}&url=${enc}`} className="rounded-md border border-border p-1.5 hover:bg-muted" aria-label="Twitter">
-            <Twitter className="h-4 w-4" />
-          </a>
-          <a target="_blank" rel="noopener" href={`https://www.facebook.com/sharer/sharer.php?u=${enc}`} className="rounded-md border border-border p-1.5 hover:bg-muted" aria-label="Facebook">
-            <Facebook className="h-4 w-4" />
-          </a>
-        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="खबर शेयर करें">
+        <span className="mr-1 inline-flex items-center gap-1 text-xs font-bold text-muted-foreground"><Share2 className="h-3.5 w-3.5" /> शेयर करें:</span>
+        <a href={`https://wa.me/?text=${shareText}%20${enc}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp पर शेयर करें" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary"><MessageCircle className="h-4 w-4"/> WhatsApp</a>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${enc}`} target="_blank" rel="noopener noreferrer" aria-label="Facebook पर शेयर करें" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary"><Facebook className="h-4 w-4"/> Facebook</a>
+        <a href={`https://twitter.com/intent/tweet?text=${shareText}&url=${enc}`} target="_blank" rel="noopener noreferrer" aria-label="X पर शेयर करें" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary"><Twitter className="h-4 w-4"/> X</a>
+        <a href={`https://t.me/share/url?url=${enc}&text=${shareText}`} target="_blank" rel="noopener noreferrer" aria-label="Telegram पर शेयर करें" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary"><Send className="h-4 w-4"/> Telegram</a>
+        <button type="button" onClick={() => void shareForInstagram()} aria-label="Instagram के लिए शेयर विकल्प" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary"><Instagram className="h-4 w-4"/> Instagram</button>
+        <button type="button" onClick={() => void copyArticleLink()} aria-label="खबर का लिंक कॉपी करें" className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-semibold hover:border-primary hover:text-primary"><Copy className="h-4 w-4"/> कॉपी लिंक</button>
+        {shareNotice && <p role="status" aria-live="polite" className="flex w-full items-center gap-1 text-xs text-primary"><Check className="h-3.5 w-3.5" />{shareNotice}</p>}
       </div>
 
       {article.image_url && (
-        <img
-          src={article.image_url}
-          alt={article.title}
-          className="mt-6 w-full rounded-xl object-cover aspect-[16/9]"
-          loading="eager"
-          fetchPriority="high"
-          decoding="async"
-        />
-      )}
+        <figure className="mt-6">
+          <img src={article.image_url} alt={photoCaption || article.title}
+            className="w-full rounded-xl object-cover aspect-[16/9]"
+            loading="eager" fetchPriority="high" decoding="async" />
+          {(photoCaption || photoCredit) && (
+            <figcaption className="mt-2 space-y-1 px-1 text-xs leading-5 text-muted-foreground">
+              {photoCaption && <p>{photoCaption}</p>}
+              {photoCredit && <p>तस्वीर स्रोत: {creditHref ? (
+                <a href={creditHref} target="_blank" rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-primary">{photoCredit}</a>
+              ) : <span>{photoCredit}</span>}</p>}
+            </figcaption>
+          )}
+        </figure>
+      )
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3" aria-label="पढ़ने की सुविधा">
         <span className="text-sm font-bold">अपने हिसाब से टेक्स्ट पढ़ें</span>
